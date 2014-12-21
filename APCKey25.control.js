@@ -37,13 +37,24 @@ var control_note =
    // 0
 }
 
-// Midi control change messages from the 8 knobs
-var lowest_cc = 48;
-var highest_cc = 55;
-
 // Just the dimensions of the grid
 var grid_width = 8;
 var grid_height = 5;
+
+// An array that maps clip indices to appropriate note values track, scene
+var grid_values = [];
+for (track = 0; track < grid_width; ++track)
+{
+   clips = grid_values[track] = []
+   for (scene = 0; scene < grid_height; ++scene)
+   {
+      clips[scene] = (grid_height - 1 - scene) * grid_width + track;
+   }
+}
+
+// Midi control change messages from the 8 knobs
+var lowest_cc = 48;
+var highest_cc = 55;
 
 // Note velocities to use in responses to trigger the grid notes
 var grid_button_mode =
@@ -80,21 +91,39 @@ var knob_mode = control_note.device;
 var track_mode = control_note.clip_stop;
 // The grid of clips with their states and listener functions, corresponding to the grid on the controller
 var grid = [];
+// Which track is currently selected
+var selected_track_index = 0;
 
 // Some global Bitwig objects
 var main_track_bank;
 
 // Initializes a clip
-function initializeClip(clip, clip_index)
+function initializeClip(clip, scene_index, track_index)
 {
    // Clip attributes
    clip.has_content = false;
    clip.playing = false;
    clip.recording = false;
    clip.queued = false;
+   clip.button_note_value = grid_values[track_index][scene_index]
 
-   // Callbacks to be called by Bitwig but also to be called when putting it back into clip mode
-   // (If I ever implement other modes not seen in the Ableton script, wouldn't that be cool?)
+   clip.display = function()
+   {
+      if (clip.has_content)
+      {
+         printMidi(144, clip.button_note_value, grid_button_mode.amber);
+         sendMidi(144, clip.button_note_value, grid_button_mode.amber);
+      }
+      else
+      {
+         clip.clear();
+      }
+   }
+
+   clip.clear = function()
+   {
+      sendMidi(144, clip.button_note_value, grid_button_mode.off);
+   }
 }
 
 // Initializes a track
@@ -128,6 +157,16 @@ function initializeTrack(track, track_index)
       track.display();
    }
 
+   // Callbacks to be called by Bitwig but also to be called when putting it back into clip mode
+   // (If I ever implement other modes not seen in the Ableton script, wouldn't that be cool?)
+   track.has_content_callback = function(scene, has_content)
+   {
+      printMidi(1, 1, has_content ? 1 : 0);
+      clip = track.clips[scene];
+      clip.has_content = has_content;
+      clip.display();
+   }
+
    track.display = function()
    {
       // In shift mode, the track buttons go into a different function
@@ -155,17 +194,22 @@ function initializeTrack(track, track_index)
       sendMidi(144, control_note.up + track.index, track_button_mode.off);
    }
 
-   // Register these callbacks
-   main_track_bank.getTrack(track_index).getSolo().addValueObserver(track.solo_callback);
-   main_track_bank.getTrack(track_index).getMute().addValueObserver(track.mute_callback);
-   main_track_bank.getTrack(track_index).exists().addValueObserver(track.exists_callback);
+   // Register the track callbacks
+   track_object = main_track_bank.getTrack(track_index);
+   track_object.getSolo().addValueObserver(track.solo_callback);
+   track_object.getMute().addValueObserver(track.mute_callback);
+   track_object.exists().addValueObserver(track.exists_callback);
    
    for (scene_index = 0; scene_index < grid_height; ++scene_index)
    {
       clip = {}
-      initializeClip(clip, scene_index);
+      initializeClip(clip, scene_index, track_index);
       track.clips[scene_index] = clip;
    }
+
+   // And the callbacks that pertain to clips
+   var clip_launcher = track_object.getClipLauncher();
+   clip_launcher.addHasContentObserver(track.has_content_callback);
 }
 
 // Initializes the grid
@@ -181,31 +225,37 @@ function initializeGrid()
    }
 }
 
-function displayGrid()
+function displayGrid(skip_clips)
 {
    for (track_index = 0; track_index < grid_width; ++track_index)
    {
       track = grid[track_index];
       track.display();
-      // for (scene_index = 0; scene_index < grid_height; ++scene_index)
-      // {
-      //    clip = grid[track_index].clips[scene_index];
-      //    clip.display();
-      // }
+      if (!skip_clips)
+      {
+         for (scene_index = 0; scene_index < grid_height; ++scene_index)
+         {
+            clip = grid[track_index].clips[scene_index];
+            clip.display();
+         }
+      }
    }
 }
 
-function clearGrid()
+function clearGrid(skip_clips)
 {
    for (track_index = 0; track_index < grid_width; ++track_index)
    {
       track = grid[track_index];
       track.clear();
-      // for (scene_index = 0; scene_index < grid_height; ++scene_index)
-      // {
-      //    clip = grid[track_index].clips[scene_index];
-      //    clip.clear();
-      // }
+      if (!skip_clips)
+      {
+         for (scene_index = 0; scene_index < grid_height; ++scene_index)
+         {
+            clip = grid[track_index].clips[scene_index];
+            clip.display();
+         }
+      }
    }
 }
 
@@ -235,14 +285,14 @@ function init()
    });
 
    initializeGrid();
-   displayGrid();
+   displayGrid(false);
 }
 
 // Light up the mode lights as appropriate for shift mode
 function shiftPressed()
 {
    shift_on = true;
-   clearGrid();
+   clearGrid(true);
    sendMidi(144, knob_mode, track_button_mode.red);
    sendMidi(144, track_mode, scene_button_mode.green);
    // TODO light up the right arrows
@@ -255,7 +305,7 @@ function shiftReleased()
    sendMidi(144, knob_mode, track_button_mode.off);
    sendMidi(144, track_mode, scene_button_mode.off);
    // TODO turn off arrow light(s)
-   displayGrid();
+   displayGrid(true);
 }
 
 // Change the track button mode and, if in shift mode, switch which button is lighted
@@ -281,7 +331,7 @@ function changeKnobControlMode(mode)
 
 function onMidi(status, data1, data2)
 {
-   printMidi(status, data1, data2);
+   // printMidi(status, data1, data2);
 
    // We only care about what happens on channel 0 here since that's where all the interesting stuff is
    if (MIDIChannel(status) != 0) return;
@@ -364,4 +414,5 @@ function onMidi(status, data1, data2)
 
 function exit()
 {
+   clearGrid(false);
 }
