@@ -151,21 +151,27 @@ function initializeTrack(track, track_index)
    track.index = track_index;
 
    // Callbacks for track changes
-   track.solo_callback = function(value)
+   track.mute_callback = function(muted)
    {
-      track.soloed = value;
+      track.muted = muted
       track.display();
    }
 
-   track.mute_callback = function(value)
+   track.solo_callback = function(soloed)
    {
-      track.muted = value
+      track.soloed = soloed;
       track.display();
    }
 
-   track.exists_callback = function(value)
+   track.armed_callback = function(armed)
    {
-      track.exists = value;
+      track.armed = armed;
+      track.display();
+   }
+
+   track.exists_callback = function(exists)
+   {
+      track.exists = exists;
       track.display();
    }
 
@@ -205,11 +211,14 @@ function initializeTrack(track, track_index)
       switch (track_mode)
       {
          case control_note.solo:
-            // In Ableton, this works differently (lights on for NOT muted) but that seems wrong to me
-            sendMidi(144, control_note.up + track.index, track.soloed? track_button_mode.red : track_button_mode.off);
+            sendMidi(144, control_note.up + track.index, track.soloed ? track_button_mode.red : track_button_mode.off);
+            break;
+         case control_note.rec_arm:
+            sendMidi(144, control_note.up + track.index, track.armed ? track_button_mode.red : track_button_mode.off);
             break;
          case control_note.mute:
-            sendMidi(144, control_note.up + track.index, track.muted? track_button_mode.red : track_button_mode.off);
+            // In Ableton, this works differently (lights on for NOT muted) but that seems wrong to me
+            sendMidi(144, control_note.up + track.index, track.muted ? track_button_mode.red : track_button_mode.off);
             break;
       }
    }
@@ -221,8 +230,9 @@ function initializeTrack(track, track_index)
 
    // Register the track callbacks
    track_object = main_track_bank.getTrack(track_index);
-   track_object.getSolo().addValueObserver(track.solo_callback);
    track_object.getMute().addValueObserver(track.mute_callback);
+   track_object.getSolo().addValueObserver(track.solo_callback);
+   track_object.getArm().addValueObserver(track.armed_callback);
    track_object.exists().addValueObserver(track.exists_callback);
    
    for (scene_index = 0; scene_index < grid_height; ++scene_index)
@@ -381,15 +391,7 @@ function onMidi(status, data1, data2)
          switch (data1)
          {
             case control_note.play_pause:
-               if (!playing)
-               {
-                  transport.play();
-               }
-               else
-               {
-                  // Grrr. Why can't I do pause instead of stop?
-                  transport.stop();
-               }
+               transport.togglePlay();
                break;
             case control_note.record:
                transport.record();
@@ -406,6 +408,9 @@ function onMidi(status, data1, data2)
             {
                case control_note.solo:
                   main_track_bank.getTrack(track_index).getSolo().toggle();
+                  break;
+               case control_note.rec_arm:
+                  main_track_bank.getTrack(track_index).getArm().toggle();
                   break;
                case control_note.mute:
                   main_track_bank.getTrack(track_index).getMute().toggle();
