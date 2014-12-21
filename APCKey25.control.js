@@ -116,12 +116,18 @@ function initializeTrack(track, track_index)
       track.display();
    };
 
+   track.exists_callback = function(value)
+   {
+      track.exists = value;
+      track.clear();
+   }
+
    track.display = function()
    {
       // In shift mode, the track buttons go into a different function
       if (shift_on) return;
       // Duh, don't draw anything if the track doesn't even exist
-      // if (!track.exists) return;
+      if (!track.exists) return;
       if (track_mode == control_note.mute)
       {
          sendMidi(144, control_note.up + track.index, track.muted? track_button_mode.off : track_button_mode.red);
@@ -135,6 +141,7 @@ function initializeTrack(track, track_index)
 
    // Register these callbacks
    main_track_bank.getTrack(track_index).getMute().addValueObserver(track.mute_callback);
+   main_track_bank.getTrack(track_index).exists().addValueObserver(track.exists_callback);
    
    for (scene_index = 0; scene_index < grid_height; ++scene_index)
    {
@@ -301,7 +308,12 @@ function onMidi(status, data1, data2)
          if (data1 >= control_note.up && data1 <= control_note.device)
          {
             track_index = data1 - control_note.up;
-            main_track_bank.getTrack(track_index).getMute().toggle();
+            switch (track_mode)
+            {
+               case control_note.mute:
+                  main_track_bank.getTrack(track_index).getMute().toggle();
+                  break;
+            }
          }
       }
    }
