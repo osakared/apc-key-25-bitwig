@@ -110,16 +110,22 @@ function initializeTrack(track, track_index)
    track.index = track_index;
 
    // Callbacks for track changes
+   track.solo_callback = function(value)
+   {
+      track.soloed = value;
+      track.display();
+   }
+
    track.mute_callback = function(value)
    {
       track.muted = value
       track.display();
-   };
+   }
 
    track.exists_callback = function(value)
    {
       track.exists = value;
-      track.clear();
+      track.display();
    }
 
    track.display = function()
@@ -127,12 +133,22 @@ function initializeTrack(track, track_index)
       // In shift mode, the track buttons go into a different function
       if (shift_on) return;
       // Duh, don't draw anything if the track doesn't even exist
-      if (!track.exists) return;
-      if (track_mode == control_note.mute)
+      if (!track.exists)
       {
-         sendMidi(144, control_note.up + track.index, track.muted? track_button_mode.off : track_button_mode.red);
+         track.clear();
+         return;
       }
-   };
+      switch (track_mode)
+      {
+         case control_note.solo:
+            // In Ableton, this works differently (lights on for NOT muted) but that seems wrong to me
+            sendMidi(144, control_note.up + track.index, track.soloed? track_button_mode.red : track_button_mode.off);
+            break;
+         case control_note.mute:
+            sendMidi(144, control_note.up + track.index, track.muted? track_button_mode.red : track_button_mode.off);
+            break;
+      }
+   }
 
    track.clear = function()
    {
@@ -140,6 +156,7 @@ function initializeTrack(track, track_index)
    }
 
    // Register these callbacks
+   main_track_bank.getTrack(track_index).getSolo().addValueObserver(track.solo_callback);
    main_track_bank.getTrack(track_index).getMute().addValueObserver(track.mute_callback);
    main_track_bank.getTrack(track_index).exists().addValueObserver(track.exists_callback);
    
@@ -310,6 +327,9 @@ function onMidi(status, data1, data2)
             track_index = data1 - control_note.up;
             switch (track_mode)
             {
+               case control_note.solo:
+                  main_track_bank.getTrack(track_index).getSolo().toggle();
+                  break;
                case control_note.mute:
                   main_track_bank.getTrack(track_index).getMute().toggle();
                   break;
