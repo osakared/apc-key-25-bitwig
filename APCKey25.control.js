@@ -59,9 +59,9 @@ var grid_button_mode =
 
 var track_button_mode =
 {
-   off :          0,
-   red :          1,
-   blinking_red : 2
+   off :            0,
+   red :            1,
+   blinking_red :   2
 }
 
 var scene_button_mode =
@@ -81,38 +81,118 @@ var track_mode = control_note.clip_stop;
 // The grid of clips with their states and listener functions, corresponding to the grid on the controller
 var grid = [];
 
+// Some global Bitwig objects
+var main_track_bank;
+
+// Initializes a clip
+function initializeClip(clip, clip_index)
+{
+   // Clip attributes
+   clip.has_content = false;
+   clip.playing = false;
+   clip.recording = false;
+   clip.queued = false;
+
+   // Callbacks to be called by Bitwig but also to be called when putting it back into clip mode
+   // (If I ever implement other modes not seen in the Ableton script, wouldn't that be cool?)
+}
+
+// Initializes a track
+function initializeTrack(track, track_index)
+{
+   track.clips = [];
+
+   // Track attributes
+   track.muted = false;
+   track.soloed = false;
+   track.armed = false;
+   track.exists = false;
+   track.index = track_index;
+
+   // Callbacks for track changes
+   track.mute_callback = function(value)
+   {
+      track.muted = value
+      track.display();
+   };
+
+   track.display = function()
+   {
+      // In shift mode, the track buttons go into a different function
+      if (shift_on) return;
+      // Duh, don't draw anything if the track doesn't even exist
+      // if (!track.exists) return;
+      if (track_mode == control_note.mute)
+      {
+         sendMidi(144, control_note.up + track.index, track.muted? track_button_mode.off : track_button_mode.red);
+      }
+   };
+
+   track.clear = function()
+   {
+      sendMidi(144, control_note.up + track.index, track_button_mode.off);
+   }
+
+   // Register these callbacks
+   main_track_bank.getTrack(track_index).getMute().addValueObserver(track.mute_callback);
+   
+   for (scene_index = 0; scene_index < grid_height; ++scene_index)
+   {
+      clip = {}
+      initializeClip(clip, scene_index);
+      track.clips[scene_index] = clip;
+   }
+}
+
 // Initializes the grid
 function initializeGrid()
 {
+   // In case this somehow gets called multiple times
+   grid = [];
+
    for (track_index = 0; track_index < grid_width; ++track_index)
    {
       track = grid[track_index] = {};
-      track.clips = [];
-      // Track attributes
-      track.muted = false;
-      track.soloed = false;
-      track.armed = false;
-      track.exists = false;
-      for (scene_index = 0; scene_index < grid_height; ++scene_index)
-      {
-         clip = {}
-         // Clip attributes
-         clip.has_content = false;
-         clip.playing = false;
-         clip.recording = false;
-         clip.queued = false;
-         // Callbacks to be called by Bitwig but also to be called when putting it back into clip mode
-         // (If I ever implement other modes not seen in the Ableton script, wouldn't that be cool?)
-         
+      initializeTrack(track, track_index);
+   }
+}
 
-         track.clips[scene_index] = clip;
-      }
+function displayGrid()
+{
+   for (track_index = 0; track_index < grid_width; ++track_index)
+   {
+      track = grid[track_index];
+      track.display();
+      // for (scene_index = 0; scene_index < grid_height; ++scene_index)
+      // {
+      //    clip = grid[track_index].clips[scene_index];
+      //    clip.display();
+      // }
+   }
+}
+
+function clearGrid()
+{
+   for (track_index = 0; track_index < grid_width; ++track_index)
+   {
+      track = grid[track_index];
+      track.clear();
+      // for (scene_index = 0; scene_index < grid_height; ++scene_index)
+      // {
+      //    clip = grid[track_index].clips[scene_index];
+      //    clip.clear();
+      // }
    }
 }
 
 function init()
 {
    host.getMidiInPort(0).setMidiCallback(onMidi);
+
+   // Make sure to initialize the globals before initializing the grid and callbacks
+   // What does argument 2 do?
+   main_track_bank = host.createMainTrackBank(8, 3, 5);
+
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
    generic.setShouldConsumeEvents(false);
 
@@ -129,12 +209,16 @@ function init()
    {
       playing = on;
    });
+
+   initializeGrid();
+   displayGrid();
 }
 
 // Light up the mode lights as appropriate for shift mode
 function shiftPressed()
 {
    shift_on = true;
+   clearGrid();
    sendMidi(144, knob_mode, track_button_mode.red);
    sendMidi(144, track_mode, scene_button_mode.green);
    // TODO light up the right arrows
@@ -147,6 +231,7 @@ function shiftReleased()
    sendMidi(144, knob_mode, track_button_mode.off);
    sendMidi(144, track_mode, scene_button_mode.off);
    // TODO turn off arrow light(s)
+   displayGrid();
 }
 
 // Change the track button mode and, if in shift mode, switch which button is lighted
@@ -211,6 +296,12 @@ function onMidi(status, data1, data2)
             case control_note.shift:
                shiftPressed();
                break;
+         }
+         // Some things don't lend themselves to switch statements
+         if (data1 >= control_note.up && data1 <= control_note.device)
+         {
+            track_index = data1 - control_note.up;
+            main_track_bank.getTrack(track_index).getMute().toggle();
          }
       }
    }
