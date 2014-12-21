@@ -109,9 +109,21 @@ function initializeClip(clip, scene_index, track_index)
 
    clip.display = function()
    {
-      if (clip.has_content)
+      if (clip.queued)
       {
-         printMidi(144, clip.button_note_value, grid_button_mode.amber);
+         // TODO make it blink in the right color, not just green
+         sendMidi(144, clip.button_note_value, grid_button_mode.blinking_green);
+      }
+      else if (clip.recording)
+      {
+         sendMidi(144, clip.button_note_value, grid_button_mode.red);
+      }
+      else if (clip.playing)
+      {
+         sendMidi(144, clip.button_note_value, grid_button_mode.green);
+      }
+      else if (clip.has_content)
+      {
          sendMidi(144, clip.button_note_value, grid_button_mode.amber);
       }
       else
@@ -161,9 +173,22 @@ function initializeTrack(track, track_index)
    // (If I ever implement other modes not seen in the Ableton script, wouldn't that be cool?)
    track.has_content_callback = function(scene, has_content)
    {
-      printMidi(1, 1, has_content ? 1 : 0);
       clip = track.clips[scene];
       clip.has_content = has_content;
+      clip.display();
+   }
+
+   track.playing_callback = function(scene, playing)
+   {
+      clip = track.clips[scene];
+      clip.playing = playing;
+      clip.display();
+   }
+
+   track.recording_callback = function(scene, recording)
+   {
+      clip = track.clips[scene];
+      clip.recording = recording;
       clip.display();
    }
 
@@ -210,6 +235,8 @@ function initializeTrack(track, track_index)
    // And the callbacks that pertain to clips
    var clip_launcher = track_object.getClipLauncher();
    clip_launcher.addHasContentObserver(track.has_content_callback);
+   clip_launcher.addIsPlayingObserver(track.playing_callback);
+   clip_launcher.addIsRecordingObserver(track.recording_callback);
 }
 
 // Initializes the grid

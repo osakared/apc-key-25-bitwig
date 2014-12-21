@@ -7,7 +7,31 @@ Introduction
 This is a work-in-progress (only been at it for a day) attempt to get the
 [APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
 
-Currently, only the keyboard and transport controls work. You can mute tracks but the grid doesn't work
-yet. Hopefully that will be done by the end of today. Ultimately, I'd like to add features not
-found with the Ableton script and make this thing do things it wasn't designed for, like using the grid
-to print marquees, as a keyboard or perhaps even for editing notes. But basic functionality comes first!
+A work in progress (I just got my APC Key 25 in late last week as I write this).
+
+TODO
+----
+
+* Implement "stop all clips"
+* Finish implementing grid
+* Implement scene buttons
+* Finish implementing track buttons
+* Implement arrow buttons
+
+### Nice to Haves:
+
+* Additional banks of device knobs (i.e., get all 127 midi knobs somehow)
+* Marquee/image mode
+* Ability to use clip launchers as a keyboard (with selectable modes)
+
+Installation
+------------
+
+Copy the APCKey25.control.js script into the akai folder in controllers
+(e.g., /opt/bitwig-studio/resources/controllers/akai/ in linux)
+
+License
+-------
+
+This is licensed under the very permissive BSD license. See LICENSE for more details.
+Copyright 2014 Osaka Red LLC and Thomas J. Webb
