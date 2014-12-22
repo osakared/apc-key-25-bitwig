@@ -12,9 +12,9 @@ A work in progress (I just got my APC Key 25 in late last week as I write this).
 TODO
 ----
 
-* Implement "stop all clips"
 * Finish implementing grid
-* Implement scene buttons
+* Implement scene launch buttons
+* Implement scene button shift functions (track modes)
 * Finish implementing track buttons
 * Implement arrow buttons
 

@@ -254,7 +254,7 @@ function initializeTrack(track, track_index)
    }
 
    // And the callbacks that pertain to clips
-   var clip_launcher = track_object.getClipLauncher();
+   var clip_launcher = track_object.getClipLauncherSlots();
    clip_launcher.addHasContentObserver(track.has_content_callback);
    clip_launcher.addIsPlayingObserver(track.playing_callback);
    clip_launcher.addIsRecordingObserver(track.recording_callback);
@@ -307,12 +307,21 @@ function clearGrid(skip_clips)
    }
 }
 
+// This will only stop the clips found in main_track_bank. Is that the right behavior?
+function stopAllClips()
+{
+   for (track_index = 0; track_index < grid_width; ++track_index)
+   {
+      track = main_track_bank.getTrack(track_index);
+      track.stop();
+   }
+}
+
 function init()
 {
    host.getMidiInPort(0).setMidiCallback(onMidi);
 
    // Make sure to initialize the globals before initializing the grid and callbacks
-   // What does argument 2 do?
    main_track_bank = host.createMainTrackBank(8, 3, 5);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
@@ -409,6 +418,9 @@ function onMidi(status, data1, data2)
                break;
             case control_note.shift:
                shiftPressed();
+               break;
+            case control_note.stop_all_clips:
+               stopAllClips();
                break;
          }
          // Some things don't lend themselves to switch statements
