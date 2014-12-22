@@ -340,11 +340,7 @@ function clearGrid(skip_clips)
 // This will only stop the clips found in main_track_bank. Is that the right behavior?
 function stopAllClips()
 {
-   for (track_index = 0; track_index < grid_width; ++track_index)
-   {
-      track = main_track_bank.getTrack(track_index);
-      track.stop();
-   }
+   main_track_bank.getClipLauncherScenes().stop();
 }
 
 function init()
@@ -453,7 +449,7 @@ function onMidi(status, data1, data2)
                stopAllClips();
                break;
          }
-         // Some things don't lend themselves to switch statements
+         // Can't do ranges in switch statements
          if (data1 >= control_note.up && data1 <= control_note.device)
          {
             track_index = data1 - control_note.up;
@@ -474,6 +470,11 @@ function onMidi(status, data1, data2)
                case control_note.select:
                   main_track_bank.getTrack(track_index).select();
             }
+         }
+         else if (data1 >= control_note.clip_stop && data1 <= control_note.select)
+         {
+            scene_index = data1 - control_note.clip_stop;
+            main_track_bank.getClipLauncherScenes().launch(scene_index);
          }
       }
    }

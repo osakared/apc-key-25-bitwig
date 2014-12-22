@@ -10,17 +10,17 @@ This is a work-in-progress attempt to get the
 TODO
 ----
 
-* Finish implementing grid
-* Implement scene launch buttons
-* Finish implementing track buttons
+* Finish grid
 * Implement arrow buttons
 * Implement the knobs!
+* Implement color in scene launch buttons (the right callbacks don't seem to ask; contact Bitwig about this)
 
 ### Nice to Haves:
 
 * Additional banks of device knobs (i.e., get all 127 midi knobs somehow)
 * Marquee/image mode
 * Ability to use clip launchers as a keyboard (with selectable modes)
+* Shift - stop all clips should return to arrangement (really easy to implement)
 
 Installation
 ------------
