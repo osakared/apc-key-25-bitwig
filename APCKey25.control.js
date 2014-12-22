@@ -82,7 +82,6 @@ var scene_button_mode =
    blinking_green : 2
 }
 
-var playing = false;
 // If shift is being held
 var shift_on = false;
 // Which function the knobs currently play
@@ -93,6 +92,8 @@ var track_mode = control_note.clip_stop;
 var grid = [];
 // Which track is currently selected
 var selected_track_index = 0;
+// Represents the different arrow keys and if they are active or not
+var arrows = [];
 
 // Some global Bitwig objects
 var main_track_bank;
@@ -303,6 +304,63 @@ function initializeGrid()
    }
 }
 
+function initializeArrow(arrow)
+{
+   arrow.can_scroll = false;
+
+   arrow.can_scroll_callback = function(can_scroll)
+   {
+      arrow.can_scroll = can_scroll;
+      arrow.display();
+   }
+
+   arrow.display = function()
+   {
+      if (!shift_on) return;
+      sendMidi(144, arrow.button_note_value, arrow.can_scroll ? track_button_mode.red : track_button_mode.off);
+   }
+
+   arrow.clear = function()
+   {
+      if (!shift_on) return;
+      sendMidi(144, arrow.button_note_value, track_button_mode.off);
+   }
+}
+
+// Initializes the arrow objects
+function initializeArrows()
+{
+   arrows = [];
+
+   up = arrows[0] = {};
+   up.button_note_value = control_note.up;
+
+   down = arrows[1] = {};
+   down.button_note_value = control_note.down;
+
+   left = arrows[2] = {};
+   left.button_note_value = control_note.left;
+
+   right = arrows[3] = {};
+   right.button_note_value = control_note.right;
+
+   for (i = 0; i < 4; ++i)
+   {
+      arrow = arrows[i];
+      initializeArrow(arrow);
+   }
+
+   main_track_bank.addCanScrollScenesUpObserver(up.can_scroll_callback);
+   main_track_bank.addCanScrollScenesDownObserver(down.can_scroll_callback);
+   main_track_bank.addCanScrollTracksUpObserver(left.can_scroll_callback);
+   main_track_bank.addCanScrollTracksDownObserver(right.can_scroll_callback);
+
+   for (i = 0; i < 4; ++i)
+   {
+      arrow = arrows[i];
+   }
+}
+
 function displayGrid(skip_clips)
 {
    for (track_index = 0; track_index < grid_width; ++track_index)
@@ -337,6 +395,22 @@ function clearGrid(skip_clips)
    }
 }
 
+function displayArrows()
+{
+   for (i = 0; i < 4; ++i)
+   {
+      arrows[i].display();
+   }
+}
+
+function clearArrows()
+{
+   for (i = 0; i < 4; ++i)
+   {
+      arrows[i].clear();
+   }
+}
+
 // This will only stop the clips found in main_track_bank. Is that the right behavior?
 function stopAllClips()
 {
@@ -348,7 +422,7 @@ function init()
    host.getMidiInPort(0).setMidiCallback(onMidi);
 
    // Make sure to initialize the globals before initializing the grid and callbacks
-   main_track_bank = host.createMainTrackBank(8, 3, 5);
+   main_track_bank = host.createMainTrackBank(8, 0, 5);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
    generic.setShouldConsumeEvents(false);
@@ -362,11 +436,8 @@ function init()
    // }
 
    transport = host.createTransportSection();
-   transport.addIsPlayingObserver(function(on)
-   {
-      playing = on;
-   });
 
+   initializeArrows();
    initializeGrid();
    displayGrid(false);
 }
@@ -376,18 +447,18 @@ function shiftPressed()
 {
    shift_on = true;
    clearGrid(true);
+   displayArrows();
    sendMidi(144, knob_mode, track_button_mode.red);
    sendMidi(144, track_mode, scene_button_mode.green);
-   // TODO light up the right arrows
 }
 
 // Leaving shift mode, turn off any lights it turned on
 function shiftReleased()
 {
+   clearArrows();
    shift_on = false;
    sendMidi(144, knob_mode, track_button_mode.off);
    sendMidi(144, track_mode, scene_button_mode.off);
-   // TODO turn off arrow light(s)
    displayGrid(true);
 }
 
@@ -423,13 +494,30 @@ function onMidi(status, data1, data2)
    {
       if (shift_on)
       {
-         if (data1 >= control_note.clip_stop && data1 <= control_note.select)
+         switch (data1)
          {
-            changeTrackButtonMode(data1);
-         }
-         else if (data1 >= control_note.volume && data1 <= control_note.device)
-         {
-            changeKnobControlMode(data1);
+            case control_note.up:
+               main_track_bank.scrollScenesUp();
+               break;
+            case control_note.down:
+               main_track_bank.scrollScenesDown();
+               break;
+            case control_note.left:
+               main_track_bank.scrollTracksUp();
+               break;
+            case control_note.right:
+               main_track_bank.scrollTracksDown();
+               break;
+            default:
+               if (data1 >= control_note.clip_stop && data1 <= control_note.select)
+               {
+                  changeTrackButtonMode(data1);
+               }
+               else if (data1 >= control_note.volume && data1 <= control_note.device)
+               {
+                  changeKnobControlMode(data1);
+               }
+               break;
          }
       }
       else
@@ -448,33 +536,34 @@ function onMidi(status, data1, data2)
             case control_note.stop_all_clips:
                stopAllClips();
                break;
-         }
-         // Can't do ranges in switch statements
-         if (data1 >= control_note.up && data1 <= control_note.device)
-         {
-            track_index = data1 - control_note.up;
-            switch (track_mode)
-            {
-               case control_note.clip_stop:
-                  main_track_bank.getTrack(track_index).stop();
-                  break;
-               case control_note.solo:
-                  main_track_bank.getTrack(track_index).getSolo().toggle();
-                  break;
-               case control_note.rec_arm:
-                  main_track_bank.getTrack(track_index).getArm().toggle();
-                  break;
-               case control_note.mute:
-                  main_track_bank.getTrack(track_index).getMute().toggle();
-                  break;
-               case control_note.select:
-                  main_track_bank.getTrack(track_index).select();
-            }
-         }
-         else if (data1 >= control_note.clip_stop && data1 <= control_note.select)
-         {
-            scene_index = data1 - control_note.clip_stop;
-            main_track_bank.getClipLauncherScenes().launch(scene_index);
+            default:
+               if (data1 >= control_note.up && data1 <= control_note.device)
+               {
+                  track_index = data1 - control_note.up;
+                  switch (track_mode)
+                  {
+                     case control_note.clip_stop:
+                        main_track_bank.getTrack(track_index).stop();
+                        break;
+                     case control_note.solo:
+                        main_track_bank.getTrack(track_index).getSolo().toggle();
+                        break;
+                     case control_note.rec_arm:
+                        main_track_bank.getTrack(track_index).getArm().toggle();
+                        break;
+                     case control_note.mute:
+                        main_track_bank.getTrack(track_index).getMute().toggle();
+                        break;
+                     case control_note.select:
+                        main_track_bank.getTrack(track_index).select();
+                  }
+               }
+               else if (data1 >= control_note.clip_stop && data1 <= control_note.select)
+               {
+                  scene_index = data1 - control_note.clip_stop;
+                  main_track_bank.getClipLauncherScenes().launch(scene_index);
+               }
+               break;
          }
       }
    }

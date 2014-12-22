@@ -11,7 +11,6 @@ TODO
 ----
 
 * Finish grid
-* Implement arrow buttons
 * Implement the knobs!
 * Implement color in scene launch buttons (the right callbacks don't seem to ask; contact Bitwig about this)
 
