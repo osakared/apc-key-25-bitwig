@@ -148,6 +148,7 @@ function initializeTrack(track, track_index)
    track.soloed = false;
    track.armed = false;
    track.exists = false;
+   track.selected = false;
    track.index = track_index;
 
    // Callbacks for track changes
@@ -172,6 +173,12 @@ function initializeTrack(track, track_index)
    track.exists_callback = function(exists)
    {
       track.exists = exists;
+      track.display();
+   }
+
+   track.selected_callback = function(selected)
+   {
+      track.selected = selected;
       track.display();
    }
 
@@ -220,6 +227,9 @@ function initializeTrack(track, track_index)
             // In Ableton, this works differently (lights on for NOT muted) but that seems wrong to me
             sendMidi(144, control_note.up + track.index, track.muted ? track_button_mode.red : track_button_mode.off);
             break;
+         case control_note.select:
+            sendMidi(144, control_note.up + track.index, track.selected ? track_button_mode.red : track_button_mode.off);
+            break;
       }
    }
 
@@ -234,6 +244,7 @@ function initializeTrack(track, track_index)
    track_object.getSolo().addValueObserver(track.solo_callback);
    track_object.getArm().addValueObserver(track.armed_callback);
    track_object.exists().addValueObserver(track.exists_callback);
+   track_object.addIsSelectedObserver(track.selected_callback);
    
    for (scene_index = 0; scene_index < grid_height; ++scene_index)
    {
@@ -415,6 +426,8 @@ function onMidi(status, data1, data2)
                case control_note.mute:
                   main_track_bank.getTrack(track_index).getMute().toggle();
                   break;
+               case control_note.select:
+                  main_track_bank.getTrack(track_index).select();
             }
          }
       }
