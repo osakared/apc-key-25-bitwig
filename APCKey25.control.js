@@ -112,7 +112,6 @@ function initializeClip(clip, scene_index, track_index)
    {
       if (clip.queued)
       {
-         // TODO make it blink in the right color, not just green
          sendMidi(144, clip.button_note_value, grid_button_mode.blinking_green);
       }
       else if (clip.recording)
@@ -215,12 +214,24 @@ function initializeTrack(track, track_index)
       clip.display();
    }
 
+   track.queued_callback = function(scene, queued)
+   {
+      clip = track.clips[scene];
+      clip.queued = queued;
+      clip.display();
+   }
+
    track.recording_callback = function(scene, recording)
    {
       clip = track.clips[scene];
       clip.recording = recording;
       clip.display();
    }
+
+   // track.color_callback = function(scene, red, green, blue)
+   // {
+   //    printMidi(red, green, blue);
+   // }
 
    track.display = function()
    {
@@ -288,7 +299,9 @@ function initializeTrack(track, track_index)
    var clip_launcher = track_object.getClipLauncherSlots();
    clip_launcher.addHasContentObserver(track.has_content_callback);
    clip_launcher.addIsPlayingObserver(track.playing_callback);
+   clip_launcher.addIsQueuedObserver(track.queued_callback);
    clip_launcher.addIsRecordingObserver(track.recording_callback);
+   // clip_launcher.addColorObserver(track.color_callback);
 }
 
 // Initializes the grid
@@ -508,6 +521,12 @@ function onMidi(status, data1, data2)
             case control_note.right:
                main_track_bank.scrollTracksDown();
                break;
+            // Functionality not in the manual that this script adds:
+            // shift+stop_all_clips does return to arrangement
+            case control_note.stop_all_clips:
+               main_track_bank.getClipLauncherScenes().returnToArrangement();
+               break;
+            case control_note.stop_all_clips:
             default:
                if (data1 >= control_note.clip_stop && data1 <= control_note.select)
                {

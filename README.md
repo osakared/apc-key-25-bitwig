@@ -7,12 +7,21 @@ Introduction
 This is a work-in-progress attempt to get the
 [APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
 
+### Difference With Official Ableton Script:
+
+* Shift + "Stop All Clips" returns to arrangement.
+* In mute mode, the light indicates that the track IS muted (which makes more sense to me).
+* Unimplemented features and issues (see below)
+
 TODO
 ----
 
 * Finish grid
 * Implement the knobs!
-* Implement color in scene launch buttons (the right callbacks don't seem to ask; contact Bitwig about this)
+
+### Issues:
+
+* Color/blinking in scene launch buttons doesn't work (the right callbacks don't seem to exist; contact Bitwig about this)
 
 ### Nice to Haves:
 
