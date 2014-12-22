@@ -148,10 +148,14 @@ function initializeTrack(track, track_index)
    track.soloed = false;
    track.armed = false;
    track.exists = false;
+   track.matrix_stopped = true;
+   track.matrix_queued_for_stop = false;
    track.selected = false;
    track.index = track_index;
 
    // Callbacks for track changes
+   // I can probably greatly reduce the lines of code through metaprogramming
+   // but I like how clear it is this way
    track.mute_callback = function(muted)
    {
       track.muted = muted
@@ -179,6 +183,18 @@ function initializeTrack(track, track_index)
    track.selected_callback = function(selected)
    {
       track.selected = selected;
+      track.display();
+   }
+
+   track.matrix_stopped_callback = function(matrix_stopped)
+   {
+      track.matrix_stopped = matrix_stopped;
+      track.display();
+   }
+
+   track.matrix_queued_for_stop_callback = function(matrix_queued_for_stop)
+   {
+      track.matrix_queued_for_stop = matrix_queued_for_stop;
       track.display();
    }
 
@@ -217,6 +233,18 @@ function initializeTrack(track, track_index)
       }
       switch (track_mode)
       {
+         case control_note.clip_stop:
+            color = track_button_mode.red;
+            if (track.matrix_queued_for_stop)
+            {
+               color = track_button_mode.blinking_red;
+            }
+            else if (track.matrix_stopped)
+            {
+               color = track_button_mode.off;
+            }
+            sendMidi(144, control_note.up + track.index, color);
+            break;
          case control_note.solo:
             sendMidi(144, control_note.up + track.index, track.soloed ? track_button_mode.red : track_button_mode.off);
             break;
@@ -245,6 +273,8 @@ function initializeTrack(track, track_index)
    track_object.getArm().addValueObserver(track.armed_callback);
    track_object.exists().addValueObserver(track.exists_callback);
    track_object.addIsSelectedObserver(track.selected_callback);
+   track_object.getIsMatrixStopped().addValueObserver(track.matrix_stopped_callback);
+   track_object.getIsMatrixQueuedForStop().addValueObserver(track.matrix_queued_for_stop_callback);
    
    for (scene_index = 0; scene_index < grid_height; ++scene_index)
    {
@@ -429,6 +459,9 @@ function onMidi(status, data1, data2)
             track_index = data1 - control_note.up;
             switch (track_mode)
             {
+               case control_note.clip_stop:
+                  main_track_bank.getTrack(track_index).stop();
+                  break;
                case control_note.solo:
                   main_track_bank.getTrack(track_index).getSolo().toggle();
                   break;

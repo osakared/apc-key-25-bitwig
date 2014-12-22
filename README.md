@@ -4,19 +4,17 @@ APC Key 25 Control Script for Bitwig
 Introduction
 ------------
 
-This is a work-in-progress (only been at it for a day) attempt to get the
+This is a work-in-progress attempt to get the
 [APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
-
-A work in progress (I just got my APC Key 25 in late last week as I write this).
 
 TODO
 ----
 
 * Finish implementing grid
 * Implement scene launch buttons
-* Implement scene button shift functions (track modes)
 * Finish implementing track buttons
 * Implement arrow buttons
+* Implement the knobs!
 
 ### Nice to Haves:
 
