@@ -4,17 +4,19 @@ APC Key 25 Control Script for Bitwig
 Introduction
 ------------
 
-This is a work-in-progress attempt to get the
+This is my attempt at getting
 [APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
 The goal is to get it doing everything the official script does, plus more. Turn this affordable
 piece of gear into a powerhouse with Bitwig and this script!
+
+So far, it's mostly working other than the issues noted below. It would be nice to someday add
+additional features seen under "Nice to Haves".
 
 ### Difference With Official Ableton Script:
 
 * Shift + "Stop All Clips" returns to arrangement.
 * In mute mode, the light indicates that the track IS muted (which makes more sense to me).
-* Probably some subtle things I didn't notice. If anything seems wrong, let me know!
-* Unimplemented features and issues (see below)
+* The issues below
 
 ### Issues:
 
