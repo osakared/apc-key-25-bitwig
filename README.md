@@ -11,24 +11,24 @@ This is a work-in-progress attempt to get the
 
 * Shift + "Stop All Clips" returns to arrangement.
 * In mute mode, the light indicates that the track IS muted (which makes more sense to me).
+* Probably some subtle things I didn't notice. If anything seems wrong, let me know!
 * Unimplemented features and issues (see below)
 
 TODO
 ----
 
-* Finish grid
 * Implement the knobs!
 
 ### Issues:
 
 * Color/blinking in scene launch buttons doesn't work (the right callbacks don't seem to exist; contact Bitwig about this)
+* Representing about to stop (blinking amber) and about to record (blinking red) doesn't work. Can't find the right callbacks (if they exist) for this either.
 
 ### Nice to Haves:
 
-* Additional banks of device knobs (i.e., get all 127 midi knobs somehow)
-* Marquee/image mode
+* Additional banks of device knobs (i.e., get all of the midi cc messages somehow)
+* Marquee/image mode (like Bitwig logo or APC on startup)
 * Ability to use clip launchers as a keyboard (with selectable modes)
-* Shift - stop all clips should return to arrangement (really easy to implement)
 
 Installation
 ------------

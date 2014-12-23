@@ -526,7 +526,6 @@ function onMidi(status, data1, data2)
             case control_note.stop_all_clips:
                main_track_bank.getClipLauncherScenes().returnToArrangement();
                break;
-            case control_note.stop_all_clips:
             default:
                if (data1 >= control_note.clip_stop && data1 <= control_note.select)
                {
@@ -556,7 +555,14 @@ function onMidi(status, data1, data2)
                stopAllClips();
                break;
             default:
-               if (data1 >= control_note.up && data1 <= control_note.device)
+               // From the grid
+               if (data1 >= 0 && data1 < 40)
+               {
+                  track_index = data1 % grid_width;
+                  scene_index = grid_height - 1 - Math.floor(data1 / grid_width);
+                  main_track_bank.getTrack(track_index).getClipLauncherSlots().launch(scene_index);
+               }
+               else if (data1 >= control_note.up && data1 <= control_note.device)
                {
                   track_index = data1 - control_note.up;
                   switch (track_mode)
