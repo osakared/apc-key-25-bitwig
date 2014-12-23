@@ -182,6 +182,10 @@ function initializeTrack(track, track_index)
 
    track.selected_callback = function(selected)
    {
+      if (selected)
+      {
+         selected_track_index = track.index;
+      }
       track.selected = selected;
       track.display();
    }
@@ -605,16 +609,29 @@ function onMidi(status, data1, data2)
    {
       // Make sure it's in the range. Don't see why it wouldn't be
       if (data1 < lowest_cc || data1 > highest_cc) return;
-   }
+      track_index = data1 - lowest_cc;
+      track = main_track_bank.getTrack(track_index);
 
-   // if (isChannelController(status))
-   // {
-   //    if (data1 >= LOWEST_CC && data1 <= HIGHEST_CC)
-   //    {
-   //       var index = data1 - LOWEST_CC;
-   //       userControls.getControl(index).set(data2, 128);
-   //    }
-   // }
+      // Functionality depends on which mode we're in
+      switch (knob_mode)
+      {
+         case control_note.volume:
+            track.getVolume().set(data2, 128);
+            break;
+         case control_note.pan:
+            track.getPan().set(data2, 128);
+            break;
+         case control_note.send:
+            // It's not certain that this even exists
+            // Too bad we can't select /which/ send
+            send = track.getSend(0);
+            if (send) send.set(data2, 128);
+            break;
+         case control_note.device:
+            main_track_bank.getTrack(selected_track_index).getPrimaryDevice().getParameter(track_index).set(data2, 128);
+            break;
+      }
+   }
 }
 
 function exit()

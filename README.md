@@ -6,6 +6,8 @@ Introduction
 
 This is a work-in-progress attempt to get the
 [APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
+The goal is to get it doing everything the official script does, plus more. Turn this affordable
+piece of gear into a powerhouse with Bitwig and this script!
 
 ### Difference With Official Ableton Script:
 
@@ -13,11 +15,6 @@ This is a work-in-progress attempt to get the
 * In mute mode, the light indicates that the track IS muted (which makes more sense to me).
 * Probably some subtle things I didn't notice. If anything seems wrong, let me know!
 * Unimplemented features and issues (see below)
-
-TODO
-----
-
-* Implement the knobs!
 
 ### Issues:
 
@@ -29,6 +26,7 @@ TODO
 * Additional banks of device knobs (i.e., get all of the midi cc messages somehow)
 * Marquee/image mode (like Bitwig logo or APC on startup)
 * Ability to use clip launchers as a keyboard (with selectable modes)
+* Let user assign knobs
 
 Installation
 ------------
