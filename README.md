@@ -20,6 +20,7 @@ additional features seen under "Nice to Haves".
 
 ### Issues:
 
+* Doesn't properly support multiple sends (just goes with the first send, if it even exists)
 * Color/blinking in scene launch buttons doesn't work (the right callbacks don't seem to exist; contact Bitwig about this)
 * Representing about to stop (blinking amber) and about to record (blinking red) doesn't work. Can't find the right callbacks (if they exist) for this either.
 
