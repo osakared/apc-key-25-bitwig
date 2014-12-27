@@ -15,11 +15,12 @@ additional features seen under "Nice to Haves".
 ### Difference With Official Ableton Script:
 
 * Shift + "Stop All Clips" returns to arrangement.
-* In mute mode, the light indicates that the track IS muted (which makes more sense to me).
+* In mute mode, the light indicates that the track _is_ muted (which makes more sense to me).
 * The issues below
 
 ### Issues:
 
+* Number of sends hard-coded to 10 since the sends functionality doesn't seem to be implemented right in the Bitwig api
 * Color/blinking in scene launch buttons doesn't work (the right callbacks don't seem to exist; contact Bitwig about this)
 
 ### Nice to Haves:
