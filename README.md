@@ -20,7 +20,6 @@ additional features seen under "Nice to Haves".
 
 ### Issues:
 
-* Doesn't properly support multiple sends (just goes with the first send, if it even exists)
 * Color/blinking in scene launch buttons doesn't work (the right callbacks don't seem to exist; contact Bitwig about this)
 
 ### Nice to Haves:
@@ -28,7 +27,6 @@ additional features seen under "Nice to Haves".
 * Additional banks of device knobs (i.e., get all of the midi cc messages somehow)
 * Marquee/image mode (like Bitwig logo or APC on startup)
 * Ability to use clip launchers as a keyboard (with selectable modes)
-* Let user assign knobs
 
 Installation
 ------------

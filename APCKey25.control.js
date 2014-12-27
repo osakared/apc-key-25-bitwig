@@ -94,6 +94,9 @@ var grid = [];
 var selected_track_index = 0;
 // Represents the different arrow keys and if they are active or not
 var arrows = [];
+// Index of current send being controlled and the [arbitrary] max send to go to
+var num_sends = 10;
+var send_index = 0;
 
 // Some global Bitwig objects
 var main_track_bank;
@@ -439,7 +442,7 @@ function init()
    host.getMidiInPort(0).setMidiCallback(onMidi);
 
    // Make sure to initialize the globals before initializing the grid and callbacks
-   main_track_bank = host.createMainTrackBank(8, 0, 5);
+   main_track_bank = host.createMainTrackBank(grid_width, num_sends, grid_height);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
    generic.setShouldConsumeEvents(false);
@@ -495,9 +498,20 @@ function changeTrackButtonMode(mode)
 function changeKnobControlMode(mode)
 {
    if (mode < control_note.volume || mode > control_note.device) return;
-   sendMidi(144, knob_mode, track_button_mode.off);
+   changed = knob_mode != mode;
+   if (changed) sendMidi(144, knob_mode, track_button_mode.off);
+   // Iterate the send index if we're dealing with send
+   if (mode == control_note.send)
+   {
+      if (changed) send_index = 0;
+      else
+      {
+         send_index++;
+         if (send_index >= num_sends) send_index = 0;
+      }
+   }
    knob_mode = mode;
-   sendMidi(144, knob_mode, track_button_mode.red);
+   if (changed) sendMidi(144, knob_mode, track_button_mode.red);
 }
 
 function onMidi(status, data1, data2)
@@ -623,9 +637,9 @@ function onMidi(status, data1, data2)
             break;
          case control_note.send:
             // It's not certain that this even exists
-            // Too bad we can't select /which/ send
-            send = track.getSend(0);
+            send = track.getSend(send_index);
             if (send) send.set(data2, 128);
+            else printMidi(send_index, track_index, data2);
             break;
          case control_note.device:
             main_track_bank.getTrack(selected_track_index).getPrimaryDevice().getParameter(track_index).set(data2, 128);
