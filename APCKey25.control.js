@@ -98,13 +98,22 @@ var arrows = [];
 // Some global Bitwig objects
 var main_track_bank;
 
+// As described to me by ThomasHelzle
+var bitwig_clip_state =
+{
+   stopped :   0,
+   playing :   1,
+   recording : 2
+}
+
 // Initializes a clip
 function initializeClip(clip, scene_index, track_index)
 {
    // Clip attributes
    clip.has_content = false;
-   clip.playing = false;
-   clip.recording = false;
+   // Which state the clip is in
+   clip.state = bitwig_clip_state.stopped;
+   // What this is queued for depends on the state, above
    clip.queued = false;
    clip.button_note_value = grid_values[track_index][scene_index]
 
@@ -112,23 +121,35 @@ function initializeClip(clip, scene_index, track_index)
    {
       if (clip.queued)
       {
-         sendMidi(144, clip.button_note_value, grid_button_mode.blinking_green);
-      }
-      else if (clip.recording)
-      {
-         sendMidi(144, clip.button_note_value, grid_button_mode.red);
-      }
-      else if (clip.playing)
-      {
-         sendMidi(144, clip.button_note_value, grid_button_mode.green);
-      }
-      else if (clip.has_content)
-      {
-         sendMidi(144, clip.button_note_value, grid_button_mode.amber);
+         switch (clip.state)
+         {
+            case bitwig_clip_state.stopped:
+               if (clip.has_content) sendMidi(144, clip.button_note_value, grid_button_mode.blinking_amber);
+               else clip.clear();
+               break;
+            case bitwig_clip_state.playing:
+               sendMidi(144, clip.button_note_value, grid_button_mode.blinking_green);
+               break;
+            case bitwig_clip_state.recording:
+               sendMidi(144, clip.button_note_value, grid_button_mode.blinking_red);
+               break;
+         }
       }
       else
       {
-         clip.clear();
+         switch (clip.state)
+         {
+            case bitwig_clip_state.stopped:
+               if (clip.has_content) sendMidi(144, clip.button_note_value, grid_button_mode.amber);
+               else clip.clear();
+               break;
+            case bitwig_clip_state.playing:
+               sendMidi(144, clip.button_note_value, grid_button_mode.green);
+               break;
+            case bitwig_clip_state.recording:
+               sendMidi(144, clip.button_note_value, grid_button_mode.red);
+               break;
+         }
       }
    }
 
@@ -211,31 +232,13 @@ function initializeTrack(track, track_index)
       clip.display();
    }
 
-   track.playing_callback = function(scene, playing)
+   track.playing_state_callback = function(scene, state, queued)
    {
       clip = track.clips[scene];
-      clip.playing = playing;
-      clip.display();
-   }
-
-   track.queued_callback = function(scene, queued)
-   {
-      clip = track.clips[scene];
+      clip.state = state;
       clip.queued = queued;
       clip.display();
    }
-
-   track.recording_callback = function(scene, recording)
-   {
-      clip = track.clips[scene];
-      clip.recording = recording;
-      clip.display();
-   }
-
-   // track.color_callback = function(scene, red, green, blue)
-   // {
-   //    printMidi(red, green, blue);
-   // }
 
    track.display = function()
    {
@@ -302,10 +305,7 @@ function initializeTrack(track, track_index)
    // And the callbacks that pertain to clips
    var clip_launcher = track_object.getClipLauncherSlots();
    clip_launcher.addHasContentObserver(track.has_content_callback);
-   clip_launcher.addIsPlayingObserver(track.playing_callback);
-   clip_launcher.addIsQueuedObserver(track.queued_callback);
-   clip_launcher.addIsRecordingObserver(track.recording_callback);
-   // clip_launcher.addColorObserver(track.color_callback);
+   clip_launcher.addPlaybackStateObserver(track.playing_state_callback);
 }
 
 // Initializes the grid
