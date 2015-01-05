@@ -16,16 +16,15 @@ additional features seen under "Nice to Haves".
 
 * Shift + "Stop All Clips" returns to arrangement.
 * In mute mode, the light indicates that the track _is_ muted (which makes more sense to me).
-* The issues below
+* The issue below
 
 ### Issues:
 
 * Number of sends hard-coded to 10 since the sends functionality doesn't seem to be implemented right in the Bitwig api
-* Color/blinking in scene launch buttons doesn't work (the right callbacks don't seem to exist; contact Bitwig about this)
 
 ### Nice to Haves:
 
-* Additional banks of device knobs (i.e., get all of the midi cc messages somehow)
+* Additional banks of device knobs
 * Marquee/image mode (like Bitwig logo or APC on startup)
 * Ability to use clip launchers as a keyboard (with selectable modes)
 

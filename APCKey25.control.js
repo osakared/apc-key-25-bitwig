@@ -1,7 +1,22 @@
-// Controller for APC Key 25
-// Copyright (C) 2014 Osaka Red LLC
+// Copyright (c) 2015, Osaka Red, LLC and Thomas J. Webb
+// All rights reserved.
+
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+//  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+//  Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer
+//  in the documentation and/or other materials provided with the distribution.
+
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+// EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 loadAPI(1);
+
+load('scene-callbacks-bitwig/scene.js');
 
 host.defineController("Akai", "APC Key 25", "1.0", "65176610-873b-11e4-b4a9-0800200c9a66");
 host.defineMidiPorts(1, 0);
@@ -94,12 +109,17 @@ var grid = [];
 var selected_track_index = 0;
 // Represents the different arrow keys and if they are active or not
 var arrows = [];
+// Represents the scene launchers
+var scene_launchers = [];
 // Index of current send being controlled and the [arbitrary] max send to go to
 var num_sends = 10;
 var send_index = 0;
 
 // Some global Bitwig objects
 var main_track_bank;
+
+// Global "fake" Bitwig object
+var fake_clip_launcher_scenes;
 
 // As described to me by ThomasHelzle
 var bitwig_clip_state =
@@ -324,6 +344,68 @@ function initializeGrid()
    }
 }
 
+function initializeSceneLauncher(scene_launcher)
+{
+   scene_launcher.button_note_value = control_note.clip_stop + i;
+   scene_launcher.playing = false;
+   scene_launcher.queued = false;
+
+   scene_launcher.display = function()
+   {
+      if (shift_on) return;
+      scene_mode = scene_button_mode.off;
+      if (scene_launcher.queued) scene_mode = scene_button_mode.blinking_green;
+      else if (scene_launcher.playing) scene_mode = scene_button_mode.green;
+      sendMidi(144, scene_launcher.button_note_value, scene_mode);
+   }
+
+   scene_launcher.clear = function()
+   {
+      sendMidi(144, scene_launcher.button_note_value, scene_button_mode.off);
+   }
+}
+
+function initializeSceneLaunchers()
+{
+   scene_launchers = [];
+
+   for (i = 0; i < grid_height; ++i)
+   {
+      scene_launcher = scene_launchers[i] = {};
+      initializeSceneLauncher(scene_launcher);
+   }
+
+   fake_clip_launcher_scenes.addIsPlayingObserver(function(scene, playing)
+   {
+      scene_launcher = scene_launchers[scene];
+      scene_launcher.playing = playing;
+      scene_launcher.display();
+   });
+
+   fake_clip_launcher_scenes.addIsQueuedObserver(function(scene, queued)
+   {
+      scene_launcher = scene_launchers[scene];
+      scene_launcher.queued = queued;
+      scene_launcher.display();
+   });
+}
+
+function displaySceneLaunchers()
+{
+   for (i = 0; i < grid_height; ++i)
+   {
+      scene_launchers[i].display();
+   }
+}
+
+function clearSceneLaunchers()
+{
+   for (i = 0; i < grid_height; ++i)
+   {
+      scene_launchers[i].clear();
+   }
+}
+
 function initializeArrow(arrow)
 {
    arrow.can_scroll = false;
@@ -443,22 +525,18 @@ function init()
 
    // Make sure to initialize the globals before initializing the grid and callbacks
    main_track_bank = host.createMainTrackBank(grid_width, num_sends, grid_height);
+   // Add callbacks to the scene slots object so that we know if a scene is being launched or played
+   fake_clip_launcher_scenes = addSceneStateCallbacks(main_track_bank, grid_width, grid_height);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
    generic.setShouldConsumeEvents(false);
 
-   // Make CCs 1-119 freely mappable
-   // userControls = host.createUserControlsSection(HIGHEST_CC - LOWEST_CC + 1);
-
-   // for(var i=LOWEST_CC; i<=HIGHEST_CC; i++)
-   // {
-   //    userControls.getControl(i - LOWEST_CC).setLabel("CC" + i);
-   // }
-
    transport = host.createTransportSection();
 
    initializeArrows();
+   initializeSceneLaunchers();
    initializeGrid();
+   displaySceneLaunchers();
    displayGrid(false);
 }
 
@@ -467,6 +545,7 @@ function shiftPressed()
 {
    shift_on = true;
    clearGrid(true);
+   clearSceneLaunchers();
    displayArrows();
    sendMidi(144, knob_mode, track_button_mode.red);
    sendMidi(144, track_mode, scene_button_mode.green);
@@ -479,6 +558,7 @@ function shiftReleased()
    shift_on = false;
    sendMidi(144, knob_mode, track_button_mode.off);
    sendMidi(144, track_mode, scene_button_mode.off);
+   displaySceneLaunchers();
    displayGrid(true);
 }
 
@@ -639,7 +719,6 @@ function onMidi(status, data1, data2)
             // It's not certain that this even exists
             send = track.getSend(send_index);
             if (send) send.set(data2, 128);
-            else printMidi(send_index, track_index, data2);
             break;
          case control_note.device:
             main_track_bank.getTrack(selected_track_index).getPrimaryDevice().getParameter(track_index).set(data2, 128);
@@ -651,4 +730,5 @@ function onMidi(status, data1, data2)
 function exit()
 {
    clearGrid(false);
+   clearSceneLaunchers();
 }
