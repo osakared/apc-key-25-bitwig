@@ -32,9 +32,7 @@ Installation
 ------------
 
 Copy the APCKey25.control.js script into the akai folder in controllers
-(e.g., /opt/bitwig-studio/resources/controllers/akai/ in linux). Note that github doesn't correctly grab submodules
-when making zip files, so you may nead to head straight to [here](https://github.com/osakared/scene-callbacks-bitwig)
-and grab the scene.js file and put it into the scene-callbacks-bitwig folder next to APCKey25.control.js.
+(e.g., /opt/bitwig-studio/resources/controllers/akai/ in linux).
 
 License
 -------
