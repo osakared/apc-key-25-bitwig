@@ -38,4 +38,4 @@ License
 -------
 
 This is licensed under the very permissive BSD license. See LICENSE for more details.
-Copyright 2014 Osaka Red LLC and Thomas J. Webb
+Copyright 2014-2015 Osaka Red LLC and Thomas J. Webb
