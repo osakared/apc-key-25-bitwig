@@ -244,7 +244,7 @@ function addSceneStateCallbacks(track_bank, num_tracks, num_scenes)
 }
 
 host.defineController("Akai", "APC Key 25", "1.0", "65176610-873b-11e4-b4a9-0800200c9a66");
-host.defineMidiPorts(1, 0);
+host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["APC Key 25"], ["APC Key 25"]);
 host.addDeviceNameBasedDiscoveryPair(["APC Key 25 MIDI 1"], ["APC Key 25 MIDI 1"]);
 
