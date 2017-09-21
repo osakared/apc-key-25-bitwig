@@ -42,7 +42,7 @@ function updateSceneNegativeValues(scene, num_tracks)
 	scene.all_not_playing = all_not_playing;
 }
 
-// This updates the positive values and dispatches 
+// This updates the positive values and dispatches
 function updateScenePositiveValues(scene, num_tracks, num_scenes, scenes, is_playing_observers, is_queued_observers)
 {
 	all_playing = true;
@@ -141,7 +141,7 @@ function prepareClip(clip, track, scenes, num_tracks, num_scenes, is_playing_obs
 		updateScenes(scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers);
 	}
 	clip_launcher.addHasContentObserver(clip.content_observer);
-	
+
 	clip.playing_observer = function(slot, playing)
 	{
 		scene = scenes[slot];
@@ -243,7 +243,7 @@ function addSceneStateCallbacks(track_bank, num_tracks, num_scenes)
 	return fake_clip_launcher_scenes;
 }
 
-host.defineController("Akai", "APC Key 25", "1.0", "65176610-873b-11e4-b4a9-0800200c9a66");
+host.defineController("Akai", "APC Key 25", "1.2", "65176610-873b-11e4-b4a9-0800200c9a66");
 host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["APC Key 25"], ["APC Key 25"]);
 host.addDeviceNameBasedDiscoveryPair(["APC Key 25 MIDI 1"], ["APC Key 25 MIDI 1"]);
@@ -345,6 +345,9 @@ var main_track_bank;
 
 // Global "fake" Bitwig object
 var fake_clip_launcher_scenes;
+
+// current device
+var current_device;
 
 // As described to me by ThomasHelzle
 var bitwig_clip_state =
@@ -542,7 +545,7 @@ function initializeTrack(track, track_index)
    track_object.addIsSelectedObserver(track.selected_callback);
    track_object.getIsMatrixStopped().addValueObserver(track.matrix_stopped_callback);
    track_object.getIsMatrixQueuedForStop().addValueObserver(track.matrix_queued_for_stop_callback);
-   
+
    for (scene_index = 0; scene_index < grid_height; ++scene_index)
    {
       clip = {}
@@ -750,6 +753,8 @@ function init()
 
    // Make sure to initialize the globals before initializing the grid and callbacks
    main_track_bank = host.createMainTrackBank(grid_width, num_sends, grid_height);
+
+   current_device = host.createEditorCursorDevice(2);
    // Add callbacks to the scene slots object so that we know if a scene is being launched or played
    fake_clip_launcher_scenes = addSceneStateCallbacks(main_track_bank, grid_width, grid_height);
 
@@ -792,7 +797,7 @@ function changeTrackButtonMode(mode)
 {
    // Do nothing if the note is out of range
    if (mode < control_note.clip_stop || mode > control_note.select) return;
-   // Turn off light 
+   // Turn off light
    sendMidi(144, track_mode, scene_button_mode.off);
    track_mode = mode;
    // Turn the right mode back on
@@ -946,7 +951,8 @@ function onMidi(status, data1, data2)
             if (send) send.set(data2, 128);
             break;
          case control_note.device:
-            main_track_bank.getTrack(selected_track_index).getPrimaryDevice().getParameter(track_index).set(data2, 128);
+            //main_track_bank.getTrack(selected_track_index).createCursorDevice().getParameter(track_index).set(data2, 128);
+            current_device.getParameter(track_index).set(data2, 128);
             break;
       }
    }
