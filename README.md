@@ -12,7 +12,7 @@ piece of gear into a powerhouse with Bitwig and this script!
 So far, it's mostly working other than the issues noted below. It would be nice to someday add
 additional features seen under "Nice to Haves".
 
-- osakared
+-osakared
 
 
 
