@@ -1,6 +1,8 @@
 // Copyright (c) 2015, Osaka Red, LLC and Thomas J. Webb
 // All rights reserved.
 
+// 2019-Apr-11: Johan Berntsson: shift+sustain to toggle fixed velocity on/off
+
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
 //  Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -747,6 +749,10 @@ function stopAllClips()
    mainTrackBank.getClipLauncherScenes().stop();
 }
 
+var velocitySensitive = false;
+var velocityCurveFixed = [];
+var velocityCurveDynamic = [];
+
 function init()
 {
    host.getMidiInPort(0).setMidiCallback(onMidi);
@@ -759,6 +765,12 @@ function init()
    fakeClipLauncherScenes = addSceneStateCallbacks(mainTrackBank, gridWidth, gridHeight);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
+   for(i = 0; i < 128; i++) {
+       velocityCurveDynamic.push(i);
+       velocityCurveFixed.push(127);
+   }
+   velocitySensitive = false;
+   generic.setVelocityTranslationTable(velocityCurveFixed);
    generic.setShouldConsumeEvents(false);
 
    transport = host.createTransportSection();
@@ -827,6 +839,17 @@ function changeKnobControlMode(mode)
 function onMidi(status, data1, data2)
 {
    // printMidi(status, data1, data2);
+   if(status == 177 && data1 == 64 && data2 == 127 && shiftOn) {
+      // shift + sustain: toggle velocity sensitity
+      printMidi(status, data1, data2);
+      if(velocitySensitive) {
+         velocitySensitive = false;
+         generic.setVelocityTranslationTable(velocityCurveFixed);
+      } else {
+         velocitySensitive = true;
+         generic.setVelocityTranslationTable(velocityCurveDynamic);
+      }
+   }
 
    // We only care about what happens on channel 0 here since that's where all the interesting stuff is
    if (MIDIChannel(status) != 0) return;
