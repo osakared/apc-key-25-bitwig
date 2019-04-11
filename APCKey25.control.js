@@ -1,4 +1,4 @@
-// Copyright (c) 2015, Osaka Red, LLC and Thomas J. Webb
+// Copyright (c) 2014-2019, Osaka Red LLC, Thomas J. Webb and Johan Berntsson
 // All rights reserved.
 
 // 2019-Apr-11: Johan Berntsson: shift+sustain to toggle fixed velocity on/off

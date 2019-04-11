@@ -17,7 +17,7 @@ additional features seen under "Nice to Haves".
 I didn't like the velocity response so I added a velocity sensitivity 
 switch. Use shift+sustain to toggle on and off.
 
-- johanberntsson
+- Johan Berntsson
 
 ### Difference With Official Ableton Script:
 
@@ -46,4 +46,4 @@ License
 -------
 
 This is licensed under the very permissive BSD license. See LICENSE for more details.
-Copyright 2014-2015 Osaka Red LLC and Thomas J. Webb
+Copyright 2014-2019 Osaka Red LLC, Thomas J. Webb and Johan Berntsson
