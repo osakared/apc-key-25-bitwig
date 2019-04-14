@@ -2,6 +2,7 @@
 // All rights reserved.
 
 // 2019-Apr-11: Johan Berntsson: shift+sustain to toggle fixed velocity on/off
+// 2019-Apr-14: Johan Berntsson: shift+button to delete clip in rec/arm mode
 
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -878,6 +879,14 @@ function onMidi(status, data1, data2)
                mainTrackBank.getClipLauncherScenes().returnToArrangement();
                break;
             default:
+               // From the grid (shift + button to delete clip in record mode)
+               if (data1 >= 0 && data1 < 40 && trackMode == controlNote.recArm)
+               {
+                  trackIndex = data1 % gridWidth;
+                  sceneIndex = gridHeight - 1 - Math.floor(data1 / gridWidth);
+                  mainTrackBank.getTrack(trackIndex).select();
+                  mainTrackBank.getTrack(trackIndex).getClipLauncher().deleteClip(sceneIndex);
+               }
                if (data1 >= controlNote.clipStop && data1 <= controlNote.select)
                {
                   changeTrackButtonMode(data1);

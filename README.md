@@ -15,13 +15,15 @@ additional features seen under "Nice to Haves".
 -osakared
 
 I didn't like the velocity response so I added a velocity sensitivity 
-switch. Use shift+sustain to toggle on and off.
+switch. Use shift+sustain to toggle on and off. I also added a shortcut
+to delete a clip using shift+button in rec/arm mode.
 
-- Johan Berntsson
+-JohanBerntsson
 
 ### Difference With Official Ableton Script:
 
 * Shift + Sustain toggles velocity sensitivity on and off.
+* Shift + clip button deletes a clip when in rec/arm mode.
 * Shift + "Stop All Clips" returns to arrangement.
 * In mute mode, the light indicates that the track _is_ muted (which makes more sense to me).
 * The issue below
