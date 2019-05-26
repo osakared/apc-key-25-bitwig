@@ -16,199 +16,199 @@
 
 loadAPI(1);
 
-// This updates all_not_playing and all_not_queued
-function updateSceneNegativeValues(scene, num_tracks)
+// This updates allNotPlaying and allNotQueued
+function updateSceneNegativeValues(scene, numTracks)
 {
-	all_empty = true;
-	all_not_playing = true;
-	all_not_queued = true;
-	for (i = 0; i < num_tracks; ++i)
+	allEmpty = true;
+	allNotPlaying = true;
+	allNotQueued = true;
+	for (i = 0; i < numTracks; ++i)
 	{
 		clip = scene.clips[i];
 		// Doesn't have anything, skip
-		if (clip.has_content) all_empty = false;
+		if (clip.hasContent) allEmpty = false;
 		else continue;
-		if (clip.playing) all_not_playing = false;
-		if (clip.queued) all_not_queued = false;
+		if (clip.playing) allNotPlaying = false;
+		if (clip.queued) allNotQueued = false;
 	}
 
-	// Can't be all_playing or all_queued if all_empty
-	if (all_empty)
+	// Can't be allPlaying or allQueued if allEmpty
+	if (allEmpty)
 	{
-		all_not_playing = all_not_queued = true;
+		allNotPlaying = allNotQueued = true;
 	}
 
-	scene.all_not_queued = all_not_queued;
-	scene.all_not_playing = all_not_playing;
+	scene.allNotQueued = allNotQueued;
+	scene.allNotPlaying = allNotPlaying;
 }
 
-// This updates the positive values and dispatches 
-function updateScenePositiveValues(scene, num_tracks, num_scenes, scenes, is_playing_observers, is_queued_observers)
+// This updates the positive values and dispatches
+function updateScenePositiveValues(scene, numTracks, numScenes, scenes, isPlayingObservers, isQueuedObservers)
 {
-	all_playing = true;
-	all_queued = true;
-	all_empty = true;
-	for (i = 0; i < num_tracks; ++i)
+	allPlaying = true;
+	allQueued = true;
+	allEmpty = true;
+	for (i = 0; i < numTracks; ++i)
 	{
 		clip = scene.clips[i];
 		// Doesn't have anything, skip
-		if (clip.has_content) all_empty = false;
+		if (clip.hasContent) allEmpty = false;
 		else continue;
-		if (!clip.playing) all_playing = false;
-		if (!clip.queued) all_queued = false;
+		if (!clip.playing) allPlaying = false;
+		if (!clip.queued) allQueued = false;
 	}
 
-	// Can't be all_playing or all_queued if all_empty
-	if (all_empty)
+	// Can't be allPlaying or allQueued if allEmpty
+	if (allEmpty)
 	{
-		all_playing = all_queued = false;
+		allPlaying = allQueued = false;
 	}
 
-	// Still think you're all_playing? Not if other tracks aren't stopped
-	if (all_playing)
+	// Still think you're allPlaying? Not if other tracks aren't stopped
+	if (allPlaying)
 	{
-		for (i = 0; i < num_scenes; ++i)
+		for (i = 0; i < numScenes; ++i)
 		{
 			// Skip if it's me
 			if (i == scene.index) continue;
-			if (!scenes[i].all_not_playing)
+			if (!scenes[i].allNotPlaying)
 			{
-				all_playing = false;
+				allPlaying = false;
 				break;
 			}
 		}
 	}
 
-	// Okay, still think you're all_queued?
-	if (all_queued)
+	// Okay, still think you're allQueued?
+	if (allQueued)
 	{
-		for (i = 0; i < num_scenes; ++i)
+		for (i = 0; i < numScenes; ++i)
 		{
 			if (i == scene.index) continue;
-			if (!scenes[i].all_not_queued)
+			if (!scenes[i].allNotQueued)
 			{
-				all_queued = false;
+				allQueued = false;
 				break;
 			}
 		}
 	}
 
 	// Time to update the scene variables and dispatch to listeners as need be
-	if (scene.all_playing != all_playing)
+	if (scene.allPlaying != allPlaying)
 	{
-		for (i = 0; i < is_playing_observers.length; ++i)
+		for (i = 0; i < isPlayingObservers.length; ++i)
 		{
-			is_playing_observers[i](scene.index, all_playing);
+			isPlayingObservers[i](scene.index, allPlaying);
 		}
-		scene.all_playing = all_playing;
+		scene.allPlaying = allPlaying;
 	}
 
-	if (scene.all_queued != all_queued)
+	if (scene.allQueued != allQueued)
 	{
-		for (i = 0; i < is_queued_observers.length; ++i)
+		for (i = 0; i < isQueuedObservers.length; ++i)
 		{
-			is_queued_observers[i](scene.index, all_queued);
+			isQueuedObservers[i](scene.index, allQueued);
 		}
-		scene.all_queued = all_queued;
+		scene.allQueued = allQueued;
 	}
 }
 
-function updateScenes(scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers)
+function updateScenes(scenes, numTracks, numScenes, isPlayingObservers, isQueuedObservers)
 {
-	for (j = 0; j < num_scenes; ++j)
+	for (j = 0; j < numScenes; ++j)
 	{
 		scene = scenes[j];
-		updateSceneNegativeValues(scene, num_tracks);
+		updateSceneNegativeValues(scene, numTracks);
 	}
 
-	for (j = 0; j < num_scenes; ++j)
+	for (j = 0; j < numScenes; ++j)
 	{
 		scene = scenes[j];
-		updateScenePositiveValues(scene, num_tracks, num_scenes, scenes, is_playing_observers, is_queued_observers);
+		updateScenePositiveValues(scene, numTracks, numScenes, scenes, isPlayingObservers, isQueuedObservers);
 	}
 }
 
-function prepareClip(clip, track, scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers)
+function prepareClip(clip, track, scenes, numTracks, numScenes, isPlayingObservers, isQueuedObservers)
 {
 	// The listeners are per track but we're interested in scene
-	clip_launcher = track.getClipLauncherSlots();
+	clipLauncher = track.getClipLauncherSlots();
 
-	clip.content_observer = function(slot, has_content)
+	clip.contentObserver = function(slot, hasContent)
 	{
 		scene = scenes[slot];
-		sub_clip = scene.clips[clip.track_index];
-		sub_clip.has_content = has_content;
-		updateScenes(scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers);
+		sub_clip = scene.clips[clip.trackIndex];
+		sub_clip.hasContent = hasContent;
+		updateScenes(scenes, numTracks, numScenes, isPlayingObservers, isQueuedObservers);
 	}
-	clip_launcher.addHasContentObserver(clip.content_observer);
-	
-	clip.playing_observer = function(slot, playing)
+	clipLauncher.addHasContentObserver(clip.contentObserver);
+
+	clip.playingObserver = function(slot, playing)
 	{
 		scene = scenes[slot];
-		sub_clip = scene.clips[clip.track_index];
+		sub_clip = scene.clips[clip.trackIndex];
 		sub_clip.playing = playing;
-		updateScenes(scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers);
+		updateScenes(scenes, numTracks, numScenes, isPlayingObservers, isQueuedObservers);
 	}
-	clip_launcher.addIsPlayingObserver(clip.playing_observer);
+	clipLauncher.addIsPlayingObserver(clip.playingObserver);
 
-	clip.queued_observer = function(slot, queued)
+	clip.queuedObserver = function(slot, queued)
 	{
 		scene = scenes[slot];
-		sub_clip = scene.clips[clip.track_index];
+		sub_clip = scene.clips[clip.trackIndex];
 		sub_clip.queued = queued;
-		updateScenes(scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers);
+		updateScenes(scenes, numTracks, numScenes, isPlayingObservers, isQueuedObservers);
 	}
-	clip_launcher.addIsQueuedObserver(clip.queued_observer);
+	clipLauncher.addIsQueuedObserver(clip.queuedObserver);
 }
 
-function prepareScene(scene, num_tracks, scenes, num_scenes)
+function prepareScene(scene, numTracks, scenes, numScenes)
 {
 	// All four of these indicate that all clips with content are in given state
 	// and in the case of the first two, the remainder are the latter two
-	scene.all_playing = false;
-	scene.all_queued = false;
-	scene.all_not_playing = true;
-	scene.all_not_queued = true;
+	scene.allPlaying = false;
+	scene.allQueued = false;
+	scene.allNotPlaying = true;
+	scene.allNotQueued = true;
 	scene.clips = [];
 }
 
 // You give this function a track bank, it will listen to changes on that track bank
 // and add functions to its ClipLauncherScenesOrSlots that register callbacks, which the objects
 // here will call, namely addIsPlayingObserver and addIsQueuedObserver
-function addSceneStateCallbacks(track_bank, num_tracks, num_scenes)
+function addSceneStateCallbacks(trackBank, numTracks, numScenes)
 {
 	// Each scene is an object with some metadata on it and an array of clips
 	// I'm basically getting the 2D array Bitwig gives me and flipping it
 	scenes = [];
 
 	// Callbacks that have been registered
-	is_playing_observers = [];
-	is_queued_observers = [];
+	isPlayingObservers = [];
+	isQueuedObservers = [];
 
-	for (track_index = 0; track_index < num_tracks; ++track_index)
+	for (trackIndex = 0; trackIndex < numTracks; ++trackIndex)
 	{
-		track = track_bank.getTrack(track_index);
-		for (scene_index = 0; scene_index < num_scenes; ++scene_index)
+		track = trackBank.getTrack(trackIndex);
+		for (sceneIndex = 0; sceneIndex < numScenes; ++sceneIndex)
 		{
 			// The first time through the outer loop, we want to start creating our scene objects
-			if (track_index == 0)
+			if (trackIndex == 0)
 			{
-				scene = scenes[scene_index] = {};
-				scene.index = scene_index;
-				prepareScene(scene, num_tracks, scenes, num_scenes);
+				scene = scenes[sceneIndex] = {};
+				scene.index = sceneIndex;
+				prepareScene(scene, numTracks, scenes, numScenes);
 			}
-			scene = scenes[scene_index];
-			clip = scene.clips[track_index] = {};
-			clip.has_content = false;
+			scene = scenes[sceneIndex];
+			clip = scene.clips[trackIndex] = {};
+			clip.hasContent = false;
 			clip.playing = false;
 			clip.queued = false;
-			clip.track_index = track_index;
+			clip.trackIndex = trackIndex;
 
 			// Put a listener on the first clip in a given track
 
-			if (scene_index == 0)
+			if (sceneIndex == 0)
 			{
-				prepareClip(clip, track, scenes, num_tracks, num_scenes, is_playing_observers, is_queued_observers);
+				prepareClip(clip, track, scenes, numTracks, numScenes, isPlayingObservers, isQueuedObservers);
 			}
 		}
 	}
@@ -216,50 +216,50 @@ function addSceneStateCallbacks(track_bank, num_tracks, num_scenes)
 	// Since we can't just attach this to the ClipLauncherScenesOrSlots object like I'd like to
 	// (because of Java's rules, not because of JavaScrtipt's), we'll have to make our own object
 	// and return
-	fake_clip_launcher_scenes = {};
+	fakeClipLauncherScenes = {};
 
-	fake_clip_launcher_scenes.addIsPlayingObserver = function(callable)
+	fakeClipLauncherScenes.addIsPlayingObserver = function(callable)
 	{
-		is_playing_observers.push(callable);
+		isPlayingObservers.push(callable);
 
-		for (i = 0; i < num_scenes; ++i)
+		for (i = 0; i < numScenes; ++i)
 		{
 			scene = scenes[i];
-			callable(i, scene.all_playing);
+			callable(i, scene.allPlaying);
 		}
 	}
 
-	fake_clip_launcher_scenes.addIsQueuedObserver = function(callable)
+	fakeClipLauncherScenes.addIsQueuedObserver = function(callable)
 	{
-		is_queued_observers.push(callable);
+		isQueuedObservers.push(callable);
 
-		for (i = 0; i < num_scenes; ++i)
+		for (i = 0; i < numScenes; ++i)
 		{
 			scene = scenes[i];
-			callable(i, scene.all_queued);
+			callable(i, scene.allQueued);
 		}
 	}
 
-	return fake_clip_launcher_scenes;
+	return fakeClipLauncherScenes;
 }
 
-host.defineController("Akai", "APC Key 25", "1.0", "65176610-873b-11e4-b4a9-0800200c9a66");
+host.defineController("Akai", "APC Key 25", "1.2", "65176610-873b-11e4-b4a9-0800200c9a66");
 host.defineMidiPorts(1, 1);
 host.addDeviceNameBasedDiscoveryPair(["APC Key 25"], ["APC Key 25"]);
 host.addDeviceNameBasedDiscoveryPair(["APC Key 25 MIDI 1"], ["APC Key 25 MIDI 1"]);
 
 // Midi notes that are used to change behavior, launch clips, etc.
-var control_note =
+var controlNote =
 {
    record :         93,
-   play_pause :     91,
+   playPause :     91,
    shift :          98,
-   clip_stop :      82,
+   clipStop :      82,
    solo :           83,
-   rec_arm :        84,
+   recArm :        84,
    mute :           85,
    select :         86,
-   stop_all_clips : 81,
+   stopAllClips : 81,
    up :             64,
    down :           65,
    left :           66,
@@ -278,76 +278,79 @@ var control_note =
 }
 
 // Just the dimensions of the grid
-var grid_width = 8;
-var grid_height = 5;
+var gridWidth = 8;
+var gridHeight = 5;
 
 // An array that maps clip indices to appropriate note values track, scene
-var grid_values = [];
-for (track = 0; track < grid_width; ++track)
+var gridValues = [];
+for (track = 0; track < gridWidth; ++track)
 {
-   clips = grid_values[track] = []
-   for (scene = 0; scene < grid_height; ++scene)
+   clips = gridValues[track] = []
+   for (scene = 0; scene < gridHeight; ++scene)
    {
-      clips[scene] = (grid_height - 1 - scene) * grid_width + track;
+      clips[scene] = (gridHeight - 1 - scene) * gridWidth + track;
    }
 }
 
 // Midi control change messages from the 8 knobs
-var lowest_cc = 48;
-var highest_cc = 55;
+var lowestCc = 48;
+var highestCc = 55;
 
 // Note velocities to use in responses to trigger the grid notes
-var grid_button_mode =
+var gridButtonMode =
 {
    off :            0,
    green :          1,
-   blinking_green : 2,
+   blinkingGreen : 2,
    red :            3,
-   blinking_red :   4,
+   blinkingRed :   4,
    amber :          5,
-   blinking_amber : 6
+   blinkingAmber : 6
 }
 
-var track_button_mode =
+var trackButtonMode =
 {
    off :            0,
    red :            1,
-   blinking_red :   2
+   blinkingRed :   2
 }
 
-var scene_button_mode =
+var sceneButtonMode =
 {
    off :            0,
    green :          1,
-   blinking_green : 2
+   blinkingGreen : 2
 }
 
 // If shift is being held
-var shift_on = false;
+var shiftOn = false;
 // Which function the knobs currently play
-var knob_mode = control_note.device;
+var knobMode = controlNote.device;
 // What the present function of the track buttons is
-var track_mode = control_note.clip_stop;
+var trackMode = controlNote.clipStop;
 // The grid of clips with their states and listener functions, corresponding to the grid on the controller
 var grid = [];
 // Which track is currently selected
-var selected_track_index = 0;
+var selectedTrackIndex = 0;
 // Represents the different arrow keys and if they are active or not
 var arrows = [];
 // Represents the scene launchers
-var scene_launchers = [];
+var sceneLaunchers = [];
 // Index of current send being controlled and the [arbitrary] max send to go to
-var num_sends = 10;
-var send_index = 0;
+var numSends = 10;
+var sendIndex = 0;
 
 // Some global Bitwig objects
-var main_track_bank;
+var mainTrackBank;
 
 // Global "fake" Bitwig object
-var fake_clip_launcher_scenes;
+var fakeClipLauncherScenes;
+
+// current device
+var currentDevice;
 
 // As described to me by ThomasHelzle
-var bitwig_clip_state =
+var bitwigClipState =
 {
    stopped :   0,
    playing :   1,
@@ -355,15 +358,15 @@ var bitwig_clip_state =
 }
 
 // Initializes a clip
-function initializeClip(clip, scene_index, track_index)
+function initializeClip(clip, sceneIndex, trackIndex)
 {
    // Clip attributes
-   clip.has_content = false;
+   clip.hasContent = false;
    // Which state the clip is in
-   clip.state = bitwig_clip_state.stopped;
+   clip.state = bitwigClipState.stopped;
    // What this is queued for depends on the state, above
    clip.queued = false;
-   clip.button_note_value = grid_values[track_index][scene_index]
+   clip.buttonNoteValue = gridValues[trackIndex][sceneIndex]
 
    clip.display = function()
    {
@@ -371,15 +374,15 @@ function initializeClip(clip, scene_index, track_index)
       {
          switch (clip.state)
          {
-            case bitwig_clip_state.stopped:
-               if (clip.has_content) sendMidi(144, clip.button_note_value, grid_button_mode.blinking_amber);
+            case bitwigClipState.stopped:
+               if (clip.hasContent) sendMidi(144, clip.buttonNoteValue, gridButtonMode.blinkingAmber);
                else clip.clear();
                break;
-            case bitwig_clip_state.playing:
-               sendMidi(144, clip.button_note_value, grid_button_mode.blinking_green);
+            case bitwigClipState.playing:
+               sendMidi(144, clip.buttonNoteValue, gridButtonMode.blinkingGreen);
                break;
-            case bitwig_clip_state.recording:
-               sendMidi(144, clip.button_note_value, grid_button_mode.blinking_red);
+            case bitwigClipState.recording:
+               sendMidi(144, clip.buttonNoteValue, gridButtonMode.blinkingRed);
                break;
          }
       }
@@ -387,15 +390,15 @@ function initializeClip(clip, scene_index, track_index)
       {
          switch (clip.state)
          {
-            case bitwig_clip_state.stopped:
-               if (clip.has_content) sendMidi(144, clip.button_note_value, grid_button_mode.amber);
+            case bitwigClipState.stopped:
+               if (clip.hasContent) sendMidi(144, clip.buttonNoteValue, gridButtonMode.amber);
                else clip.clear();
                break;
-            case bitwig_clip_state.playing:
-               sendMidi(144, clip.button_note_value, grid_button_mode.green);
+            case bitwigClipState.playing:
+               sendMidi(144, clip.buttonNoteValue, gridButtonMode.green);
                break;
-            case bitwig_clip_state.recording:
-               sendMidi(144, clip.button_note_value, grid_button_mode.red);
+            case bitwigClipState.recording:
+               sendMidi(144, clip.buttonNoteValue, gridButtonMode.red);
                break;
          }
       }
@@ -403,12 +406,12 @@ function initializeClip(clip, scene_index, track_index)
 
    clip.clear = function()
    {
-      sendMidi(144, clip.button_note_value, grid_button_mode.off);
+      sendMidi(144, clip.buttonNoteValue, gridButtonMode.off);
    }
 }
 
 // Initializes a track
-function initializeTrack(track, track_index)
+function initializeTrack(track, trackIndex)
 {
    track.clips = [];
 
@@ -417,70 +420,70 @@ function initializeTrack(track, track_index)
    track.soloed = false;
    track.armed = false;
    track.exists = false;
-   track.matrix_stopped = true;
-   track.matrix_queued_for_stop = false;
+   track.matrixStopped = true;
+   track.matrixQueuedForStop = false;
    track.selected = false;
-   track.index = track_index;
+   track.index = trackIndex;
 
    // Callbacks for track changes
    // I can probably greatly reduce the lines of code through metaprogramming
    // but I like how clear it is this way
-   track.mute_callback = function(muted)
+   track.muteCallback = function(muted)
    {
       track.muted = muted
       track.display();
    }
 
-   track.solo_callback = function(soloed)
+   track.soloCallback = function(soloed)
    {
       track.soloed = soloed;
       track.display();
    }
 
-   track.armed_callback = function(armed)
+   track.armedCallback = function(armed)
    {
       track.armed = armed;
       track.display();
    }
 
-   track.exists_callback = function(exists)
+   track.existsCallback = function(exists)
    {
       track.exists = exists;
       track.display();
    }
 
-   track.selected_callback = function(selected)
+   track.selectedCallback = function(selected)
    {
       if (selected)
       {
-         selected_track_index = track.index;
+         selectedTrackIndex = track.index;
       }
       track.selected = selected;
       track.display();
    }
 
-   track.matrix_stopped_callback = function(matrix_stopped)
+   track.matrixStoppedCallback = function(matrixStopped)
    {
-      track.matrix_stopped = matrix_stopped;
+      track.matrixStopped = matrixStopped;
       track.display();
    }
 
-   track.matrix_queued_for_stop_callback = function(matrix_queued_for_stop)
+   track.matrixQueuedForStopCallback = function(matrixQueuedForStop)
    {
-      track.matrix_queued_for_stop = matrix_queued_for_stop;
+      track.matrixQueuedForStop = matrixQueuedForStop;
       track.display();
    }
 
    // Callbacks to be called by Bitwig but also to be called when putting it back into clip mode
    // (If I ever implement other modes not seen in the Ableton script, wouldn't that be cool?)
-   track.has_content_callback = function(scene, has_content)
+   track.hasContentCallback = function(scene, hasContent)
    {
       clip = track.clips[scene];
-      clip.has_content = has_content;
+      clip.hasContent = hasContent;
       clip.display();
    }
 
-   track.playing_state_callback = function(scene, state, queued)
+   track.playingStateCallback = function(scene, state, queued)
    {
       clip = track.clips[scene];
       clip.state = state;
@@ -491,69 +494,69 @@ function initializeTrack(track, track_index)
    track.display = function()
    {
       // In shift mode, the track buttons go into a different function
-      if (shift_on) return;
+      if (shiftOn) return;
       // Duh, don't draw anything if the track doesn't even exist
       if (!track.exists)
       {
          track.clear();
          return;
       }
-      switch (track_mode)
+      switch (trackMode)
       {
-         case control_note.clip_stop:
-            color = track_button_mode.red;
-            if (track.matrix_queued_for_stop)
+         case controlNote.clipStop:
+            color = trackButtonMode.red;
+            if (track.matrixQueuedForStop)
             {
-               color = track_button_mode.blinking_red;
+               color = trackButtonMode.blinkingRed;
             }
-            else if (track.matrix_stopped)
+            else if (track.matrixStopped)
             {
-               color = track_button_mode.off;
+               color = trackButtonMode.off;
             }
-            sendMidi(144, control_note.up + track.index, color);
+            sendMidi(144, controlNote.up + track.index, color);
             break;
-         case control_note.solo:
-            sendMidi(144, control_note.up + track.index, track.soloed ? track_button_mode.red : track_button_mode.off);
+         case controlNote.solo:
+            sendMidi(144, controlNote.up + track.index, track.soloed ? trackButtonMode.red : trackButtonMode.off);
             break;
-         case control_note.rec_arm:
-            sendMidi(144, control_note.up + track.index, track.armed ? track_button_mode.red : track_button_mode.off);
+         case controlNote.recArm:
+            sendMidi(144, controlNote.up + track.index, track.armed ? trackButtonMode.red : trackButtonMode.off);
             break;
-         case control_note.mute:
+         case controlNote.mute:
             // In Ableton, this works differently (lights on for NOT muted) but that seems wrong to me
-            sendMidi(144, control_note.up + track.index, track.muted ? track_button_mode.red : track_button_mode.off);
+            sendMidi(144, controlNote.up + track.index, track.muted ? trackButtonMode.red : trackButtonMode.off);
             break;
-         case control_note.select:
-            sendMidi(144, control_note.up + track.index, track.selected ? track_button_mode.red : track_button_mode.off);
+         case controlNote.select:
+            sendMidi(144, controlNote.up + track.index, track.selected ? trackButtonMode.red : trackButtonMode.off);
             break;
       }
    }
 
    track.clear = function()
    {
-      sendMidi(144, control_note.up + track.index, track_button_mode.off);
+      sendMidi(144, controlNote.up + track.index, trackButtonMode.off);
    }
 
    // Register the track callbacks
-   track_object = main_track_bank.getTrack(track_index);
-   track_object.getMute().addValueObserver(track.mute_callback);
-   track_object.getSolo().addValueObserver(track.solo_callback);
-   track_object.getArm().addValueObserver(track.armed_callback);
-   track_object.exists().addValueObserver(track.exists_callback);
-   track_object.addIsSelectedObserver(track.selected_callback);
-   track_object.getIsMatrixStopped().addValueObserver(track.matrix_stopped_callback);
-   track_object.getIsMatrixQueuedForStop().addValueObserver(track.matrix_queued_for_stop_callback);
-   
-   for (scene_index = 0; scene_index < grid_height; ++scene_index)
+   track_object = mainTrackBank.getTrack(trackIndex);
+   track_object.getMute().addValueObserver(track.muteCallback);
+   track_object.getSolo().addValueObserver(track.soloCallback);
+   track_object.getArm().addValueObserver(track.armedCallback);
+   track_object.exists().addValueObserver(track.existsCallback);
+   track_object.addIsSelectedObserver(track.selectedCallback);
+   track_object.getIsMatrixStopped().addValueObserver(track.matrixStoppedCallback);
+   track_object.getIsMatrixQueuedForStop().addValueObserver(track.matrixQueuedForStopCallback);
+
+   for (sceneIndex = 0; sceneIndex < gridHeight; ++sceneIndex)
    {
       clip = {}
-      initializeClip(clip, scene_index, track_index);
-      track.clips[scene_index] = clip;
+      initializeClip(clip, sceneIndex, trackIndex);
+      track.clips[sceneIndex] = clip;
    }
 
    // And the callbacks that pertain to clips
-   var clip_launcher = track_object.getClipLauncherSlots();
-   clip_launcher.addHasContentObserver(track.has_content_callback);
-   clip_launcher.addPlaybackStateObserver(track.playing_state_callback);
+   var clipLauncher = track_object.getClipLauncherSlots();
+   clipLauncher.addHasContentObserver(track.hasContentCallback);
+   clipLauncher.addPlaybackStateObserver(track.playingStateCallback);
 }
 
 // Initializes the grid
@@ -562,95 +565,95 @@ function initializeGrid()
    // In case this somehow gets called multiple times
    grid = [];
 
-   for (track_index = 0; track_index < grid_width; ++track_index)
+   for (trackIndex = 0; trackIndex < gridWidth; ++trackIndex)
    {
-      track = grid[track_index] = {};
-      initializeTrack(track, track_index);
+      track = grid[trackIndex] = {};
+      initializeTrack(track, trackIndex);
    }
 }
 
-function initializeSceneLauncher(scene_launcher)
+function initializeSceneLauncher(sceneLauncher)
 {
-   scene_launcher.button_note_value = control_note.clip_stop + i;
-   scene_launcher.playing = false;
-   scene_launcher.queued = false;
+   sceneLauncher.buttonNoteValue = controlNote.clipStop + i;
+   sceneLauncher.playing = false;
+   sceneLauncher.queued = false;
 
-   scene_launcher.display = function()
+   sceneLauncher.display = function()
    {
-      if (shift_on) return;
-      scene_mode = scene_button_mode.off;
-      if (scene_launcher.queued) scene_mode = scene_button_mode.blinking_green;
-      else if (scene_launcher.playing) scene_mode = scene_button_mode.green;
-      sendMidi(144, scene_launcher.button_note_value, scene_mode);
+      if (shiftOn) return;
+      scene_mode = sceneButtonMode.off;
+      if (sceneLauncher.queued) scene_mode = sceneButtonMode.blinkingGreen;
+      else if (sceneLauncher.playing) scene_mode = sceneButtonMode.green;
+      sendMidi(144, sceneLauncher.buttonNoteValue, scene_mode);
    }
 
-   scene_launcher.clear = function()
+   sceneLauncher.clear = function()
    {
-      sendMidi(144, scene_launcher.button_note_value, scene_button_mode.off);
+      sendMidi(144, sceneLauncher.buttonNoteValue, sceneButtonMode.off);
    }
 }
 
 function initializeSceneLaunchers()
 {
-   scene_launchers = [];
+   sceneLaunchers = [];
 
-   for (i = 0; i < grid_height; ++i)
+   for (i = 0; i < gridHeight; ++i)
    {
-      scene_launcher = scene_launchers[i] = {};
-      initializeSceneLauncher(scene_launcher);
+      sceneLauncher = sceneLaunchers[i] = {};
+      initializeSceneLauncher(sceneLauncher);
    }
 
-   fake_clip_launcher_scenes.addIsPlayingObserver(function(scene, playing)
+   fakeClipLauncherScenes.addIsPlayingObserver(function(scene, playing)
    {
-      scene_launcher = scene_launchers[scene];
-      scene_launcher.playing = playing;
-      scene_launcher.display();
+      sceneLauncher = sceneLaunchers[scene];
+      sceneLauncher.playing = playing;
+      sceneLauncher.display();
    });
 
-   fake_clip_launcher_scenes.addIsQueuedObserver(function(scene, queued)
+   fakeClipLauncherScenes.addIsQueuedObserver(function(scene, queued)
    {
-      scene_launcher = scene_launchers[scene];
-      scene_launcher.queued = queued;
-      scene_launcher.display();
+      sceneLauncher = sceneLaunchers[scene];
+      sceneLauncher.queued = queued;
+      sceneLauncher.display();
    });
 }
 
 function displaySceneLaunchers()
 {
-   for (i = 0; i < grid_height; ++i)
+   for (i = 0; i < gridHeight; ++i)
    {
-      scene_launchers[i].display();
+      sceneLaunchers[i].display();
    }
 }
 
 function clearSceneLaunchers()
 {
-   for (i = 0; i < grid_height; ++i)
+   for (i = 0; i < gridHeight; ++i)
    {
-      scene_launchers[i].clear();
+      sceneLaunchers[i].clear();
    }
 }
 
 function initializeArrow(arrow)
 {
-   arrow.can_scroll = false;
+   arrow.canScroll = false;
 
-   arrow.can_scroll_callback = function(can_scroll)
+   arrow.canScrollCallback = function(canScroll)
    {
-      arrow.can_scroll = can_scroll;
+      arrow.canScroll = canScroll;
       arrow.display();
    }
 
    arrow.display = function()
    {
-      if (!shift_on) return;
-      sendMidi(144, arrow.button_note_value, arrow.can_scroll ? track_button_mode.red : track_button_mode.off);
+      if (!shiftOn) return;
+      sendMidi(144, arrow.buttonNoteValue, arrow.canScroll ? trackButtonMode.red : trackButtonMode.off);
    }
 
    arrow.clear = function()
    {
-      if (!shift_on) return;
-      sendMidi(144, arrow.button_note_value, track_button_mode.off);
+      if (!shiftOn) return;
+      sendMidi(144, arrow.buttonNoteValue, trackButtonMode.off);
    }
 }
 
@@ -660,16 +663,16 @@ function initializeArrows()
    arrows = [];
 
    up = arrows[0] = {};
-   up.button_note_value = control_note.up;
+   up.buttonNoteValue = controlNote.up;
 
    down = arrows[1] = {};
-   down.button_note_value = control_note.down;
+   down.buttonNoteValue = controlNote.down;
 
    left = arrows[2] = {};
-   left.button_note_value = control_note.left;
+   left.buttonNoteValue = controlNote.left;
 
    right = arrows[3] = {};
-   right.button_note_value = control_note.right;
+   right.buttonNoteValue = controlNote.right;
 
    for (i = 0; i < 4; ++i)
    {
@@ -677,10 +680,10 @@ function initializeArrows()
       initializeArrow(arrow);
    }
 
-   main_track_bank.addCanScrollScenesUpObserver(up.can_scroll_callback);
-   main_track_bank.addCanScrollScenesDownObserver(down.can_scroll_callback);
-   main_track_bank.addCanScrollTracksUpObserver(left.can_scroll_callback);
-   main_track_bank.addCanScrollTracksDownObserver(right.can_scroll_callback);
+   mainTrackBank.addCanScrollScenesUpObserver(up.canScrollCallback);
+   mainTrackBank.addCanScrollScenesDownObserver(down.canScrollCallback);
+   mainTrackBank.addCanScrollTracksUpObserver(left.canScrollCallback);
+   mainTrackBank.addCanScrollTracksDownObserver(right.canScrollCallback);
 
    for (i = 0; i < 4; ++i)
    {
@@ -690,15 +693,15 @@ function initializeArrows()
 
 function displayGrid(skip_clips)
 {
-   for (track_index = 0; track_index < grid_width; ++track_index)
+   for (trackIndex = 0; trackIndex < gridWidth; ++trackIndex)
    {
-      track = grid[track_index];
+      track = grid[trackIndex];
       track.display();
       if (!skip_clips)
       {
-         for (scene_index = 0; scene_index < grid_height; ++scene_index)
+         for (sceneIndex = 0; sceneIndex < gridHeight; ++sceneIndex)
          {
-            clip = grid[track_index].clips[scene_index];
+            clip = grid[trackIndex].clips[sceneIndex];
             clip.display();
          }
       }
@@ -707,15 +710,15 @@ function displayGrid(skip_clips)
 
 function clearGrid(skip_clips)
 {
-   for (track_index = 0; track_index < grid_width; ++track_index)
+   for (trackIndex = 0; trackIndex < gridWidth; ++trackIndex)
    {
-      track = grid[track_index];
+      track = grid[trackIndex];
       track.clear();
       if (!skip_clips)
       {
-         for (scene_index = 0; scene_index < grid_height; ++scene_index)
+         for (sceneIndex = 0; sceneIndex < gridHeight; ++sceneIndex)
          {
-            clip = grid[track_index].clips[scene_index];
+            clip = grid[trackIndex].clips[sceneIndex];
             clip.display();
          }
       }
@@ -738,10 +741,10 @@ function clearArrows()
    }
 }
 
-// This will only stop the clips found in main_track_bank. Is that the right behavior?
+// This will only stop the clips found in mainTrackBank. Is that the right behavior?
 function stopAllClips()
 {
-   main_track_bank.getClipLauncherScenes().stop();
+   mainTrackBank.getClipLauncherScenes().stop();
 }
 
 function init()
@@ -749,9 +752,11 @@ function init()
    host.getMidiInPort(0).setMidiCallback(onMidi);
 
    // Make sure to initialize the globals before initializing the grid and callbacks
-   main_track_bank = host.createMainTrackBank(grid_width, num_sends, grid_height);
+   mainTrackBank = host.createMainTrackBank(gridWidth, numSends, gridHeight);
+
+   currentDevice = host.createEditorCursorDevice(2);
    // Add callbacks to the scene slots object so that we know if a scene is being launched or played
-   fake_clip_launcher_scenes = addSceneStateCallbacks(main_track_bank, grid_width, grid_height);
+   fakeClipLauncherScenes = addSceneStateCallbacks(mainTrackBank, gridWidth, gridHeight);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
    generic.setShouldConsumeEvents(false);
@@ -768,21 +773,21 @@ function init()
 // Light up the mode lights as appropriate for shift mode
 function shiftPressed()
 {
-   shift_on = true;
+   shiftOn = true;
    clearGrid(true);
    clearSceneLaunchers();
    displayArrows();
-   sendMidi(144, knob_mode, track_button_mode.red);
-   sendMidi(144, track_mode, scene_button_mode.green);
+   sendMidi(144, knobMode, trackButtonMode.red);
+   sendMidi(144, trackMode, sceneButtonMode.green);
 }
 
 // Leaving shift mode, turn off any lights it turned on
 function shiftReleased()
 {
    clearArrows();
-   shift_on = false;
-   sendMidi(144, knob_mode, track_button_mode.off);
-   sendMidi(144, track_mode, scene_button_mode.off);
+   shiftOn = false;
+   sendMidi(144, knobMode, trackButtonMode.off);
+   sendMidi(144, trackMode, sceneButtonMode.off);
    displaySceneLaunchers();
    displayGrid(true);
 }
@@ -791,32 +796,32 @@ function shiftReleased()
 function changeTrackButtonMode(mode)
 {
    // Do nothing if the note is out of range
-   if (mode < control_note.clip_stop || mode > control_note.select) return;
-   // Turn off light 
-   sendMidi(144, track_mode, scene_button_mode.off);
-   track_mode = mode;
+   if (mode < controlNote.clipStop || mode > controlNote.select) return;
+   // Turn off light
+   sendMidi(144, trackMode, sceneButtonMode.off);
+   trackMode = mode;
    // Turn the right mode back on
-   sendMidi(144, track_mode, scene_button_mode.green);
+   sendMidi(144, trackMode, sceneButtonMode.green);
 }
 
 // Like the above function but for knob modes
 function changeKnobControlMode(mode)
 {
-   if (mode < control_note.volume || mode > control_note.device) return;
-   changed = knob_mode != mode;
-   if (changed) sendMidi(144, knob_mode, track_button_mode.off);
+   if (mode < controlNote.volume || mode > controlNote.device) return;
+   changed = knobMode != mode;
+   if (changed) sendMidi(144, knobMode, trackButtonMode.off);
    // Iterate the send index if we're dealing with send
-   if (mode == control_note.send)
+   if (mode == controlNote.send)
    {
-      if (changed) send_index = 0;
+      if (changed) sendIndex = 0;
       else
       {
-         send_index++;
-         if (send_index >= num_sends) send_index = 0;
+         sendIndex++;
+         if (sendIndex >= numSends) sendIndex = 0;
       }
    }
-   knob_mode = mode;
-   if (changed) sendMidi(144, knob_mode, track_button_mode.red);
+   knobMode = mode;
+   if (changed) sendMidi(144, knobMode, trackButtonMode.red);
 }
 
 function onMidi(status, data1, data2)
@@ -828,33 +833,33 @@ function onMidi(status, data1, data2)
 
    if (isNoteOn(status))
    {
-      if (shift_on)
+      if (shiftOn)
       {
          switch (data1)
          {
-            case control_note.up:
-               main_track_bank.scrollScenesUp();
+            case controlNote.up:
+               mainTrackBank.scrollScenesUp();
                break;
-            case control_note.down:
-               main_track_bank.scrollScenesDown();
+            case controlNote.down:
+               mainTrackBank.scrollScenesDown();
                break;
-            case control_note.left:
-               main_track_bank.scrollTracksUp();
+            case controlNote.left:
+               mainTrackBank.scrollTracksUp();
                break;
-            case control_note.right:
-               main_track_bank.scrollTracksDown();
+            case controlNote.right:
+               mainTrackBank.scrollTracksDown();
                break;
             // Functionality not in the manual that this script adds:
-            // shift+stop_all_clips does return to arrangement
-            case control_note.stop_all_clips:
-               main_track_bank.getClipLauncherScenes().returnToArrangement();
+            // shift+stopAllClips does return to arrangement
+            case controlNote.stopAllClips:
+               mainTrackBank.getClipLauncherScenes().returnToArrangement();
                break;
             default:
-               if (data1 >= control_note.clip_stop && data1 <= control_note.select)
+               if (data1 >= controlNote.clipStop && data1 <= controlNote.select)
                {
                   changeTrackButtonMode(data1);
                }
-               else if (data1 >= control_note.volume && data1 <= control_note.device)
+               else if (data1 >= controlNote.volume && data1 <= controlNote.device)
                {
                   changeKnobControlMode(data1);
                }
@@ -865,51 +870,51 @@ function onMidi(status, data1, data2)
       {
          switch (data1)
          {
-            case control_note.play_pause:
+            case controlNote.playPause:
                transport.togglePlay();
                break;
-            case control_note.record:
+            case controlNote.record:
                transport.record();
                break;
-            case control_note.shift:
+            case controlNote.shift:
                shiftPressed();
                break;
-            case control_note.stop_all_clips:
+            case controlNote.stopAllClips:
                stopAllClips();
                break;
             default:
                // From the grid
                if (data1 >= 0 && data1 < 40)
                {
-                  track_index = data1 % grid_width;
-                  scene_index = grid_height - 1 - Math.floor(data1 / grid_width);
-                  main_track_bank.getTrack(track_index).getClipLauncherSlots().launch(scene_index);
+                  trackIndex = data1 % gridWidth;
+                  sceneIndex = gridHeight - 1 - Math.floor(data1 / gridWidth);
+                  mainTrackBank.getTrack(trackIndex).getClipLauncherSlots().launch(sceneIndex);
                }
-               else if (data1 >= control_note.up && data1 <= control_note.device)
+               else if (data1 >= controlNote.up && data1 <= controlNote.device)
                {
-                  track_index = data1 - control_note.up;
-                  switch (track_mode)
+                  trackIndex = data1 - controlNote.up;
+                  switch (trackMode)
                   {
-                     case control_note.clip_stop:
-                        main_track_bank.getTrack(track_index).stop();
+                     case controlNote.clipStop:
+                        mainTrackBank.getTrack(trackIndex).stop();
                         break;
-                     case control_note.solo:
-                        main_track_bank.getTrack(track_index).getSolo().toggle();
+                     case controlNote.solo:
+                        mainTrackBank.getTrack(trackIndex).getSolo().toggle();
                         break;
-                     case control_note.rec_arm:
-                        main_track_bank.getTrack(track_index).getArm().toggle();
+                     case controlNote.recArm:
+                        mainTrackBank.getTrack(trackIndex).getArm().toggle();
                         break;
-                     case control_note.mute:
-                        main_track_bank.getTrack(track_index).getMute().toggle();
+                     case controlNote.mute:
+                        mainTrackBank.getTrack(trackIndex).getMute().toggle();
                         break;
-                     case control_note.select:
-                        main_track_bank.getTrack(track_index).select();
+                     case controlNote.select:
+                        mainTrackBank.getTrack(trackIndex).select();
                   }
                }
-               else if (data1 >= control_note.clip_stop && data1 <= control_note.select)
+               else if (data1 >= controlNote.clipStop && data1 <= controlNote.select)
                {
-                  scene_index = data1 - control_note.clip_stop;
-                  main_track_bank.getClipLauncherScenes().launch(scene_index);
+                  sceneIndex = data1 - controlNote.clipStop;
+                  mainTrackBank.getClipLauncherScenes().launch(sceneIndex);
                }
                break;
          }
@@ -919,7 +924,7 @@ function onMidi(status, data1, data2)
    {
       switch (data1)
       {
-         case control_note.shift:
+         case controlNote.shift:
             shiftReleased();
             break;
       }
@@ -927,26 +932,27 @@ function onMidi(status, data1, data2)
    else if (isChannelController(status))
    {
       // Make sure it's in the range. Don't see why it wouldn't be
-      if (data1 < lowest_cc || data1 > highest_cc) return;
-      track_index = data1 - lowest_cc;
-      track = main_track_bank.getTrack(track_index);
+      if (data1 < lowestCc || data1 > highestCc) return;
+      trackIndex = data1 - lowestCc;
+      track = mainTrackBank.getTrack(trackIndex);
 
       // Functionality depends on which mode we're in
-      switch (knob_mode)
+      switch (knobMode)
       {
-         case control_note.volume:
+         case controlNote.volume:
             track.getVolume().set(data2, 128);
             break;
-         case control_note.pan:
+         case controlNote.pan:
             track.getPan().set(data2, 128);
             break;
-         case control_note.send:
+         case controlNote.send:
             // It's not certain that this even exists
-            send = track.getSend(send_index);
+            send = track.getSend(sendIndex);
             if (send) send.set(data2, 128);
             break;
-         case control_note.device:
-            main_track_bank.getTrack(selected_track_index).getPrimaryDevice().getParameter(track_index).set(data2, 128);
+         case controlNote.device:
+            //mainTrackBank.getTrack(selectedTrackIndex).createCursorDevice().getParameter(trackIndex).set(data2, 128);
+            currentDevice.getParameter(trackIndex).set(data2, 128);
             break;
       }
    }
