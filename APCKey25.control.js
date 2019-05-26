@@ -1,5 +1,8 @@
-// Copyright (c) 2015, Osaka Red, LLC and Thomas J. Webb
+// Copyright (c) 2014-2019, Osaka Red LLC, Thomas J. Webb and Johan Berntsson
 // All rights reserved.
+
+// 2019-Apr-11: Johan Berntsson: shift+sustain to toggle fixed velocity on/off
+// 2019-Apr-14: Johan Berntsson: shift+button to delete clip in rec/arm mode
 
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
@@ -747,6 +750,10 @@ function stopAllClips()
    mainTrackBank.getClipLauncherScenes().stop();
 }
 
+var velocitySensitive = false;
+var velocityCurveFixed = [];
+var velocityCurveDynamic = [];
+
 function init()
 {
    host.getMidiInPort(0).setMidiCallback(onMidi);
@@ -759,6 +766,12 @@ function init()
    fakeClipLauncherScenes = addSceneStateCallbacks(mainTrackBank, gridWidth, gridHeight);
 
    generic = host.getMidiInPort(0).createNoteInput("Akai Key 25", "?1????");
+   for(i = 0; i < 128; i++) {
+       velocityCurveDynamic.push(i);
+       velocityCurveFixed.push(127);
+   }
+   velocitySensitive = false;
+   generic.setVelocityTranslationTable(velocityCurveFixed);
    generic.setShouldConsumeEvents(false);
 
    transport = host.createTransportSection();
@@ -827,6 +840,17 @@ function changeKnobControlMode(mode)
 function onMidi(status, data1, data2)
 {
    // printMidi(status, data1, data2);
+   if(status == 177 && data1 == 64 && data2 == 127 && shiftOn) {
+      // shift + sustain: toggle velocity sensitity
+      printMidi(status, data1, data2);
+      if(velocitySensitive) {
+         velocitySensitive = false;
+         generic.setVelocityTranslationTable(velocityCurveFixed);
+      } else {
+         velocitySensitive = true;
+         generic.setVelocityTranslationTable(velocityCurveDynamic);
+      }
+   }
 
    // We only care about what happens on channel 0 here since that's where all the interesting stuff is
    if (MIDIChannel(status) != 0) return;
@@ -855,6 +879,14 @@ function onMidi(status, data1, data2)
                mainTrackBank.getClipLauncherScenes().returnToArrangement();
                break;
             default:
+               // From the grid (shift + button to delete clip in record mode)
+               if (data1 >= 0 && data1 < 40 && trackMode == controlNote.recArm)
+               {
+                  trackIndex = data1 % gridWidth;
+                  sceneIndex = gridHeight - 1 - Math.floor(data1 / gridWidth);
+                  mainTrackBank.getTrack(trackIndex).select();
+                  mainTrackBank.getTrack(trackIndex).getClipLauncher().deleteClip(sceneIndex);
+               }
                if (data1 >= controlNote.clipStop && data1 <= controlNote.select)
                {
                   changeTrackButtonMode(data1);
