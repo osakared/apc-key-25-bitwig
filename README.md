@@ -4,7 +4,7 @@ APC Key 25 Control Script for Bitwig
 Introduction
 ------------
 
-This is my attempt at getting
+This is an attempt at getting
 [APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
 The goal is to get it doing everything the official script does, plus more. Turn this affordable
 piece of gear into a powerhouse with Bitwig and this script!
@@ -41,8 +41,11 @@ to delete a clip using shift+button in rec/arm mode.
 Installation
 ------------
 
-Copy the APCKey25.control.js script into the akai folder in controllers
-(e.g., /opt/bitwig-studio/resources/controllers/akai/ in linux).
+Copy the APCKey25.control.js script into your local controller scripts directory:
+
+* `~/Documents/Bitwig\ Studio/Controller Scripts/` in macos
+* `~/Bitwig Studio/Controller Scripts/` in linux
+* `%userprofile%\Documents\Bitwig Studio\Controller Scripts\` in windows
 
 License
 -------
