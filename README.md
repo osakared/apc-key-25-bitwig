@@ -25,6 +25,7 @@ to delete a clip using shift+button in rec/arm mode.
 * Shift + Sustain toggles velocity sensitivity on and off.
 * Shift + clip button deletes a clip when in rec/arm mode.
 * Shift + "Stop All Clips" returns to arrangement.
+* Shift + Play/Pause does tap tempo.
 * In mute mode, the light indicates that the track _is_ muted (which makes more sense to me).
 * The issue below
 
