@@ -346,6 +346,9 @@ var sendIndex = 0;
 // Some global Bitwig objects
 var mainTrackBank;
 
+// Main cursor
+var cursorTrack;
+
 // Global "fake" Bitwig object
 var fakeClipLauncherScenes;
 
@@ -759,7 +762,10 @@ function init()
     host.getMidiInPort(0).setMidiCallback(onMidi);
     
     // Make sure to initialize the globals before initializing the grid and callbacks
-    mainTrackBank = host.createMainTrackBank(gridWidth, numSends, gridHeight);
+    mainTrackBank = host.createTrackBank(gridWidth, numSends, gridHeight, false);
+
+    cursorTrack = host.createCursorTrack(4, gridHeight);
+    mainTrackBank.followCursorTrack(cursorTrack);
     
     currentDevice = host.createEditorCursorDevice(2);
     // Add callbacks to the scene slots object so that we know if a scene is being launched or played
@@ -951,7 +957,7 @@ function onMidi(status, data1, data2)
                 else if (data1 >= controlNote.clipStop && data1 <= controlNote.select)
                 {
                     sceneIndex = data1 - controlNote.clipStop;
-                    mainTrackBank.getClipLauncherScenes().launch(sceneIndex);
+                    mainTrackBank.sceneBank().launchScene(sceneIndex);
                 }
                 break;
             }
