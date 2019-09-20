@@ -763,7 +763,7 @@ function init()
     
     // Make sure to initialize the globals before initializing the grid and callbacks
     mainTrackBank = host.createTrackBank(gridWidth, numSends, gridHeight, false);
-    for (i = 0; i < gridHeight; ++i)
+    for (i = 0; i < gridWidth; ++i)
     {
         slotBank = mainTrackBank.getItemAt(i).clipLauncherSlotBank();
         if (slotBank) slotBank.setIndication(true);
