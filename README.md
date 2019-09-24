@@ -9,33 +9,18 @@ This is an attempt at getting
 The goal is to get it doing everything the official script does, plus more. Turn this affordable
 piece of gear into a powerhouse with Bitwig and this script!
 
-So far, it's mostly working other than the issues noted below. It would be nice to someday add
-additional features seen under "Nice to Haves".
-
--osakared
-
-I didn't like the velocity response so I added a velocity sensitivity 
-switch. Use shift+sustain to toggle on and off. I also added a shortcut
-to delete a clip using shift+button in rec/arm mode.
-
--JohanBerntsson
-
 ### Difference With Official Ableton Script:
 
 * Shift + Sustain toggles velocity sensitivity on and off.
 * Shift + clip button deletes a clip when in rec/arm mode.
 * Shift + "Stop All Clips" returns to arrangement.
 * Shift + Play/Pause does tap tempo.
-* In mute mode, the light indicates that the track _is_ muted (which makes more sense to me).
-* The issue below
-
-### Issues:
-
-* Number of sends hard-coded to 10 since the sends functionality doesn't seem to be implemented right in the Bitwig api
+* Shift + Record cycles through remote pages.
+* In mute mode, the light indicates that the track _is_ muted.
 
 ### Nice to Haves:
 
-* Additional banks of device knobs
+* Ability to remap Shift + [Sustain, Play/Pause, Rec] since there are more features we could add than just the three and different people have different workflows
 * Marquee/image mode (like Bitwig logo or APC on startup)
 * Ability to use clip launchers as a keyboard (with selectable modes)
 

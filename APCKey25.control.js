@@ -17,7 +17,7 @@
 // LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 // EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-loadAPI(1);
+loadAPI(2);
 
 // This updates allNotPlaying and allNotQueued
 function updateSceneNegativeValues(scene, numTracks)
@@ -354,6 +354,9 @@ var fakeClipLauncherScenes;
 
 // current device
 var currentDevice;
+
+// current remote control panel
+var cursorRemoteControls;
 
 // As described to me by ThomasHelzle
 var bitwigClipState =
@@ -763,7 +766,7 @@ function init()
     
     // Make sure to initialize the globals before initializing the grid and callbacks
     mainTrackBank = host.createTrackBank(gridWidth, numSends, gridHeight, false);
-    for (i = 0; i < gridHeight; ++i)
+    for (i = 0; i < gridWidth; ++i)
     {
         slotBank = mainTrackBank.getItemAt(i).clipLauncherSlotBank();
         if (slotBank) slotBank.setIndication(true);
@@ -773,6 +776,7 @@ function init()
     mainTrackBank.followCursorTrack(cursorTrack);
     
     currentDevice = host.createEditorCursorDevice(2);
+    cursorRemoteControls = currentDevice.createCursorRemoteControlsPage(8);
     // Add callbacks to the scene slots object so that we know if a scene is being launched or played
     fakeClipLauncherScenes = addSceneStateCallbacks(mainTrackBank, gridWidth, gridHeight);
     
@@ -781,8 +785,8 @@ function init()
         velocityCurveDynamic.push(i);
         velocityCurveFixed.push(127);
     }
-    velocitySensitive = false;
-    generic.setVelocityTranslationTable(velocityCurveFixed);
+    velocitySensitive = true;
+    generic.setVelocityTranslationTable(velocityCurveDynamic);
     generic.setShouldConsumeEvents(false);
     
     transport = host.createTransportSection();
@@ -854,7 +858,7 @@ function onMidi(status, data1, data2)
     if(status == 177 && data1 == 64 && data2 == 127 && shiftOn) {
         // shift + sustain: toggle velocity sensitity
         //   printMidi(status, data1, data2);
-        if(velocitySensitive) {
+        if (velocitySensitive) {
             velocitySensitive = false;
             generic.setVelocityTranslationTable(velocityCurveFixed);
             host.showPopupNotification('Velocity sensitivity turned off');
@@ -876,6 +880,9 @@ function onMidi(status, data1, data2)
             {
                 case controlNote.playPause:
                 transport.tapTempo();
+                break;
+                case controlNote.record:
+                cursorRemoteControls.selectNextPage(true);
                 break;
                 case controlNote.up:
                 mainTrackBank.scrollScenesUp();
@@ -999,8 +1006,7 @@ function onMidi(status, data1, data2)
             if (send) send.set(data2, 128);
             break;
             case controlNote.device:
-            //mainTrackBank.getTrack(selectedTrackIndex).createCursorDevice().getParameter(trackIndex).set(data2, 128);
-            currentDevice.getParameter(trackIndex).set(data2, 128);
+            cursorRemoteControls.getParameter(trackIndex).set(data2, 128);
             break;
         }
     }
