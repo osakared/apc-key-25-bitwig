@@ -27,14 +27,14 @@ piece of gear into a powerhouse with Bitwig and this script!
 Installation
 ------------
 
-Copy the APCKey25.control.js script into your local controller scripts directory:
+Copy APCKey25.bwextension into your local extensions directory:
 
-* `~/Documents/Bitwig\ Studio/Controller Scripts/` in macos
-* `~/Bitwig Studio/Controller Scripts/` in linux
-* `%userprofile%\Documents\Bitwig Studio\Controller Scripts\` in windows
+* `~/Documents/Bitwig\ Studio/Extensions/` in macos
+* `~/Bitwig Studio/Extensions/` in linux
+* `%userprofile%\Documents\Bitwig Studio\Extensions\` in windows
 
 License
 -------
 
-This is licensed under the very permissive BSD license. See LICENSE for more details.
-Copyright 2014-2019 Osaka Red LLC, Thomas J. Webb and Johan Berntsson
+This is licensed under the very permissive MIT license. See LICENSE for more details.
+Copyright 2014-2019 Thomas J. Webb and Johan Berntsson

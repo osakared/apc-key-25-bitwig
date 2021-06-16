@@ -1,0 +1,9 @@
+-cp src
+-lib grig.controller
+com.osakared.akai.APCKey25Controller
+
+-D GRIG_CONTROLLER_BITWIG
+--jvm bin/APCKey25.jar
+maven.hxml
+--cmd jar uf bin/APCKey25.jar -C bin META-INF
+--cmd mv bin/APCKey25.jar bin/APCKey25.bwextension
