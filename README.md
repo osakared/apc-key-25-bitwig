@@ -4,14 +4,15 @@ APC Key 25 Control Script for Bitwig
 Introduction
 ------------
 
-This is an attempt at getting
-[APC Key 25](http://www.akaipro.com/product/apc-key-25) working with [Bitwig](http://www.bitwig.com).
-The goal is to get it doing everything the official script does, plus more. Turn this affordable
-piece of gear into a powerhouse with Bitwig and this script!
+This is a controller extension for
+[APC Key 25](http://www.akaipro.com/product/apc-key-25). Works with [Bitwig](http://www.bitwig.com) and any other DAW supported by grig.controller in the future.
+
+The old javascript-based Bitwig controller script is still here for anyone who wants to use it for now but the haxe/jvm version supercedes it and should be better than it in every way.
 
 ### Difference With Official Ableton Script:
 
-* Shift + Sustain toggles velocity sensitivity on and off.
+* ~~Shift + Sustain toggles velocity sensitivity on and off.~~
+* Shift + Sustain toggles lancher vs. matrix keyboard mode
 * Shift + clip button deletes a clip when in rec/arm mode.
 * Shift + "Stop All Clips" returns to arrangement.
 * Shift + Play/Pause does tap tempo.
@@ -37,4 +38,4 @@ License
 -------
 
 This is licensed under the very permissive MIT license. See LICENSE for more details.
-Copyright 2014-2019 Thomas J. Webb and Johan Berntsson
+Copyright 2014-2021 Thomas J. Webb and Johan Berntsson

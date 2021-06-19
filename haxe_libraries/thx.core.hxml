@@ -1,0 +1,4 @@
+# @install: lix --silent download "haxelib:/thx.core#0.44.0" into thx.core/0.44.0/haxelib
+-cp ${HAXE_LIBCACHE}/thx.core/0.44.0/haxelib/src
+-D thx.core=0.44.0
+-D thx_core

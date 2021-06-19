@@ -1,5 +1,8 @@
 -cp src
 -lib grig.controller
+-lib grig.midi
+-lib thx.core
+-lib tink_core
 com.osakared.akai.APCKey25Controller
 
 -D GRIG_CONTROLLER_BITWIG
