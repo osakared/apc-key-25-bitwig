@@ -16,37 +16,18 @@ class APCKey25Controller implements grig.controller.Controller
 {
     var host:Host;
     var transport:grig.controller.Transport;
+    var midiOut:grig.midi.MidiSender;
 
     var shift:Bool = false;
-    var knobMode:KnobMode = Volume;
-
-    // main transport section buttons
-    private static inline var PLAY_PAUSE =      91;
-    private static inline var RECORD =          93;
-    private static inline var SHIFT =           98;
-
-    // scene buttons
-    private static inline var CLIP_STOP =       82;
-    private static inline var SOLO =            83;
-    private static inline var REC_ARM =         84;
-    private static inline var MUTE =            85;
-    private static inline var SELECT =          86;
-
-    // all by itself
-    private static inline var STOP_ALL_CLIPS =  81;
-
-    // arrow and knob control section
-    private static inline var UP =              64;
-    private static inline var DOWN =            65;
-    private static inline var LEFT =            66;
-    private static inline var RIGHT =           67;
-    private static inline var VOLUME =          68;
-    private static inline var PAN =             69;
-    private static inline var SEND =            70;
-    private static inline var DEVICE =          71;
+    var knobMode:KnobMode = KnobMode.Volume;
+    var trackMode:TrackMode = TrackMode.ClipStop;
 
     var midiTriggerList:MidiTriggerList = null;
     var offMidiTriggerList:MidiTriggerList = null;
+
+    var knobCtrlDisplay:MidiDisplay = null;
+    var trackCtrlDisplay:MidiDisplay = null;
+    var sceneLaunchDisplay:MidiDisplay = null;
 
     public function new()
     {
@@ -70,34 +51,62 @@ class APCKey25Controller implements grig.controller.Controller
     private function setupTriggers()
     {
         midiTriggerList = new MidiTriggerList();
-        midiTriggerList.push(new SingleNoteTrigger(PLAY_PAUSE, () -> {
+
+        // Transport stuff
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, () -> {
             if (shift) transport.tapTempo();
             else transport.play();
         }));
-        midiTriggerList.push(new SingleNoteTrigger(RECORD, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, () -> {
             if (shift) true; // do something like this: cursorRemoteControls.selectNextPage(true);
             else transport.record();
         }));
-        midiTriggerList.push(new SingleNoteTrigger(SHIFT, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, () -> {
             shift = true;
         }));
 
+        // Track controls/arrows/knob controls
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Volume, () -> {
+            if (shift) knobMode = KnobMode.Volume;
+        }));
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Pan, () -> {
+            if (shift) knobMode = KnobMode.Pan;
+        }));
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Send, () -> {
+            if (shift) knobMode = KnobMode.Send;
+        }));
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Device, () -> {
+            if (shift) knobMode = KnobMode.Device;
+        }));
+
         offMidiTriggerList = new MidiTriggerList();
-        offMidiTriggerList.push(new SingleNoteTrigger(SHIFT, () -> {
+        offMidiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, () -> {
             shift = false;
         }));
     }
 
-    public function startup(host_:Host)
+    private function setupDisplays()
     {
-        setupTriggers();
+        knobCtrlDisplay = new MidiDisplay([[ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]], TrackButtonMode.Off, 0);
+        trackCtrlDisplay = new MidiDisplay([[
+            ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right, ButtonNotes.Volume, ButtonNotes.Pan,
+            ButtonNotes.Send, ButtonNotes.Device
+        ]], TrackButtonMode.Off, 0);
+        sceneLaunchDisplay = new MidiDisplay([[ButtonNotes.ClipStop, ButtonNotes.Solo, ButtonNotes.RecArm, ButtonNotes.Mute, ButtonNotes.Select]],
+            SceneButtonMode.Off, 0);
+    }
 
-        host = host_;
+    public function startup(host:Host)
+    {
+        this.host = host;
 
         host.showMessage('startup() called');
+        setupTriggers();
+        setupDisplays();
         // TODO get knob mode from settings
         transport = host.getTransport();
         host.getMidiIn(0).setCallback(onMidi);
+        midiOut = host.getMidiOut(0);
     }
 
     public function shutdown()
@@ -107,5 +116,15 @@ class APCKey25Controller implements grig.controller.Controller
 
     public function flush()
     {
+        if (shift) {
+            knobCtrlDisplay.setExclusive(0, knobMode, TrackButtonMode.Red);
+            knobCtrlDisplay.display(midiOut);
+            sceneLaunchDisplay.setExclusive(0, trackMode, SceneButtonMode.Green);
+            sceneLaunchDisplay.display(midiOut);
+        } else {
+            trackCtrlDisplay.display(midiOut);
+            sceneLaunchDisplay.clear();
+            sceneLaunchDisplay.display(midiOut);
+        }
     }
 }

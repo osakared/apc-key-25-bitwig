@@ -5,15 +5,15 @@ class SingleNoteTrigger implements MidiTrigger
     private var noteNumber:Int;
     private var triggerEvent:()->Void;
 
-    public function new(noteNumber_:Int, triggerEvent_:()->Void)
+    public function new(noteNumber:Int, triggerEvent:()->Void)
     {
-        noteNumber = noteNumber_;
-        triggerEvent = triggerEvent_;
+        this.noteNumber = noteNumber;
+        this.triggerEvent = triggerEvent;
     }
 
-    public function handle(noteNumber_:Int):Bool
+    public function handle(noteNumber:Int):Bool
     {
-        if (noteNumber == noteNumber_) {
+        if (this.noteNumber == noteNumber) {
             triggerEvent();
             return true;
         }

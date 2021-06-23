@@ -1,0 +1,53 @@
+package com.osakared.akai;
+
+typedef DisplayState = {
+    var midiNote:Int;
+    var midiState:Int;
+}
+
+class MidiDisplay
+{
+    private var states = new Array<Array<DisplayState>>();
+    private var defaultState:Int;
+    private var channel:Int;
+
+    public function new(midiNotes:Array<Array<Int>>, defaultState:Int, channel:Int)
+    {
+        this.defaultState = defaultState;
+        this.channel = channel;
+        for (row in midiNotes) {
+            var stateRow = new Array<DisplayState>();
+            for (note in row) {
+                stateRow.push({
+                    midiNote: note,
+                    midiState: defaultState
+                });
+            }
+            states.push(stateRow);
+        }
+    }
+
+    public function clear():Void
+    {
+        for (stateRow in states) {
+            for (state in stateRow) {
+                state.midiState = defaultState;
+            }
+        }
+    }
+
+    public function setExclusive(row:Int, col:Int, state:Int):Void
+    {
+        clear();
+        states[row][col].midiState = state;
+    }
+
+    public function display(midiOut:grig.midi.MidiSender):Void
+    {
+        for (stateRow in states) {
+            for (state in stateRow) {
+                midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOn, [state.midiNote, state.midiState], 0));
+            }
+        }
+    }
+}

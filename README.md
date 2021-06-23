@@ -16,7 +16,9 @@ The old javascript-based Bitwig controller script is still here for anyone who w
 * Shift + clip button deletes a clip when in rec/arm mode.
 * Shift + "Stop All Clips" returns to arrangement.
 * Shift + Play/Pause does tap tempo.
-* Shift + Record cycles through remote pages.
+* Shift + Record depends on knob mode:
+  * Cycles through send in send mode
+  * Cycles through remote pages in device mode
 * In mute mode, the light indicates that the track _is_ muted.
 
 ### Nice to Haves:
