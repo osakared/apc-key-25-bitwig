@@ -36,10 +36,15 @@ class MidiDisplay
         }
     }
 
+    public function set(row:Int, col:Int, state:Int):Void
+    {
+        states[row][col].midiState = state;
+    }
+
     public function setExclusive(row:Int, col:Int, state:Int):Void
     {
         clear();
-        states[row][col].midiState = state;
+        set(row, col, state);
     }
 
     public function display(midiOut:grig.midi.MidiSender):Void
