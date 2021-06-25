@@ -18,7 +18,6 @@ class APCKey25Controller implements grig.controller.Controller
     private static inline var HEIGHT:Int = 5;
 
     var host:Host;
-    var transport:grig.controller.Transport;
     var midiOut:grig.midi.MidiSender;
     var clipView:grig.controller.ClipView;
 
@@ -107,14 +106,6 @@ class APCKey25Controller implements grig.controller.Controller
         midiTriggerList = new MidiTriggerList();
 
         // Transport stuff
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, () -> {
-            if (shift) transport.tapTempo();
-            else transport.play();
-        }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, () -> {
-            if (shift) true; // do something like this: cursorRemoteControls.selectNextPage(true);
-            else transport.record();
-        }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, () -> {
             shift = true;
         }));
@@ -181,16 +172,33 @@ class APCKey25Controller implements grig.controller.Controller
         trackModeDisplay = new MidiDisplay(sceneButtons, SceneButtonMode.Off, 0);
     }
 
+    private function setupTransport(transport:grig.controller.Transport)
+    {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, () -> {
+            if (shift) transport.tapTempo();
+            else transport.play();
+        }));
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, () -> {
+            if (shift) true; // do something like this: cursorRemoteControls.selectNextPage(true);
+            else transport.record();
+        }));
+    }
+
     public function startup(host:Host)
     {
         this.host = host;
 
         host.showMessage('startup() called');
-        transport = host.getTransport();
+        setupTriggers();
+        host.getTransport().handle((outcome) -> {
+            switch outcome {
+                case Success(transport): setupTransport(transport);
+                case Failure(error): trace(error);
+            }
+        });
         clipView = host.createClipView(WIDTH, HEIGHT);
         host.getMidiIn(0).setCallback(onMidi);
         midiOut = host.getMidiOut(0);
-        setupTriggers();
         setupDisplays();
         setupCallbacks();
         // TODO get knob mode from settings
