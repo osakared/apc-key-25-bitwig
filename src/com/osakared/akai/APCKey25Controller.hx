@@ -27,7 +27,7 @@ class APCKey25Controller implements grig.controller.Controller
     private static var ARROW_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right]];
 
     var host:Host;
-    var midiOut:grig.midi.MidiSender;
+    var midiOut:grig.midi.MidiSender = null;
     var pages = new Array<{arrowDisplay:MidiDisplay, movable:grig.controller.Movable}>();
     var pageIndex:Int = 0;
 
@@ -66,7 +66,7 @@ class APCKey25Controller implements grig.controller.Controller
     private function set_trackMode(_trackMode:TrackMode):TrackMode
     {
         this._trackMode = _trackMode;
-        sceneLaunchDisplay.setExclusive(0, _trackMode, SceneButtonMode.Green);
+        trackModeDisplay.setExclusive(0, _trackMode, SceneButtonMode.Green);
         return this._trackMode;
     }
 
@@ -111,6 +111,11 @@ class APCKey25Controller implements grig.controller.Controller
             arrowDisplay.set(0, ArrowMode.Right, trackButtonModeOn(value));
         });
         pages.push({arrowDisplay: arrowDisplay, movable: clipView});
+
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.StopAllClips, () -> {
+            if (shift) clipView.returnToArrangement();
+            else clipView.stopAllClips();
+        }));
     }
 
     private function movePage(direction:Direction):Void
@@ -259,10 +264,10 @@ class APCKey25Controller implements grig.controller.Controller
         if (shift) {
             displayArrows();
             knobCtrlDisplay.display(midiOut);
-            sceneLaunchDisplay.display(midiOut);
+            trackModeDisplay.display(midiOut);
         } else {
             trackCtrlDisplay.display(midiOut);
-            trackModeDisplay.display(midiOut);
+            sceneLaunchDisplay.display(midiOut);
         }
     }
 }
