@@ -3,6 +3,14 @@ package com.osakared.akai;
 import grig.controller.Host;
 import grig.midi.MidiMessage;
 
+enum Direction
+{
+    Left;
+    Right;
+    Up;
+    Down;
+}
+
 @name("APC Key 25")
 @author("pinkboi")
 @version("1.3")
@@ -16,10 +24,12 @@ class APCKey25Controller implements grig.controller.Controller
 {
     private static inline var WIDTH:Int = 8;
     private static inline var HEIGHT:Int = 5;
+    private static var ARROW_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right]];
 
     var host:Host;
     var midiOut:grig.midi.MidiSender;
-    var clipView:grig.controller.ClipView;
+    var pages = new Array<{arrowDisplay:MidiDisplay, movable:grig.controller.Movable}>();
+    var pageIndex:Int = 0;
 
     var shift:Bool = false;
     var _knobMode:KnobMode;
@@ -30,7 +40,7 @@ class APCKey25Controller implements grig.controller.Controller
     var midiTriggerList:MidiTriggerList = null;
     var offMidiTriggerList:MidiTriggerList = null;
 
-    var arrowDisplay:MidiDisplay = null;
+    var emptyArrowDisplay:MidiDisplay = null;
     var knobCtrlDisplay:MidiDisplay = null;
     var trackCtrlDisplay:MidiDisplay = null;
     var trackModeDisplay:MidiDisplay = null;
@@ -85,8 +95,9 @@ class APCKey25Controller implements grig.controller.Controller
         else TrackButtonMode.Off;
     }
 
-    private function setupCallbacks()
+    private function setupClipView(clipView:grig.controller.ClipView)
     {
+        var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
         clipView.onCanMoveDownChanged((value:Bool) -> {
             arrowDisplay.set(0, ArrowMode.Down, trackButtonModeOn(value));
         });
@@ -99,6 +110,20 @@ class APCKey25Controller implements grig.controller.Controller
         clipView.onCanMoveRightChanged((value:Bool) -> {
             arrowDisplay.set(0, ArrowMode.Right, trackButtonModeOn(value));
         });
+        pages.push({arrowDisplay: arrowDisplay, movable: clipView});
+    }
+
+    private function movePage(direction:Direction):Void
+    {
+        if (pages.length == 0) return;
+
+        var page = pages[pageIndex].movable;
+        switch (direction) {
+            case Left: page.moveLeft();
+            case Right: page.moveRight();
+            case Up: page.moveUp();
+            case Down: page.moveDown();
+        }
     }
 
     private function setupTriggers()
@@ -112,16 +137,16 @@ class APCKey25Controller implements grig.controller.Controller
 
         // Track controls/arrows/knob controls
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Up, () -> {
-            if (shift) clipView.moveUp();
+            if (shift) movePage(Up);
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Down, () -> {
-            if (shift) clipView.moveDown();
+            if (shift) movePage(Down);
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Left, () -> {
-            if (shift) clipView.moveLeft();
+            if (shift) movePage(Left);
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Right, () -> {
-            if (shift) clipView.moveRight();
+            if (shift) movePage(Right);
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Volume, () -> {
             if (shift) knobMode = KnobMode.Volume;
@@ -161,7 +186,7 @@ class APCKey25Controller implements grig.controller.Controller
 
     private function setupDisplays()
     {
-        arrowDisplay = new MidiDisplay([[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right]], TrackButtonMode.Off, 0);
+        emptyArrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
         knobCtrlDisplay = new MidiDisplay([[ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]], TrackButtonMode.Off, 0);
         trackCtrlDisplay = new MidiDisplay([[
             ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right, ButtonNotes.Volume, ButtonNotes.Pan,
@@ -193,14 +218,23 @@ class APCKey25Controller implements grig.controller.Controller
         host.getTransport().handle((outcome) -> {
             switch outcome {
                 case Success(transport): setupTransport(transport);
-                case Failure(error): trace(error);
+                case Failure(error): host.logMessage('Transport unavailable: ${error.message}');
             }
         });
-        clipView = host.createClipView(WIDTH, HEIGHT);
-        host.getMidiIn(0).setCallback(onMidi);
+        host.createClipView(WIDTH, HEIGHT).handle((outcome) -> {
+            switch outcome {
+                case Success(clipView): setupClipView(clipView);
+                case Failure(error): host.logMessage('Clip view unavailable: ${error.message}');
+            }
+        });
+        host.getMidiIn(0).handle((outcome) -> {
+            switch outcome {
+                case Success(midiIn): midiIn.setCallback(onMidi);
+                case Failure(error): host.logMessage('Midi in unavailable: ${error.message}');
+            }
+        });
         midiOut = host.getMidiOut(0);
         setupDisplays();
-        setupCallbacks();
         // TODO get knob mode from settings
         knobMode = KnobMode.Volume;
         trackMode = TrackMode.ClipStop;
@@ -211,10 +245,19 @@ class APCKey25Controller implements grig.controller.Controller
         host.showMessage('shutdown() called');
     }
 
+    private function displayArrows():Void
+    {
+        if (pages.length == 0) {
+            emptyArrowDisplay.display(midiOut);
+            return;
+        }
+        pages[pageIndex].arrowDisplay.display(midiOut);
+    }
+
     public function flush()
     {
         if (shift) {
-            arrowDisplay.display(midiOut);
+            displayArrows();
             knobCtrlDisplay.display(midiOut);
             sceneLaunchDisplay.display(midiOut);
         } else {
