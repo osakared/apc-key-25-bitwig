@@ -136,6 +136,16 @@ class APCKey25Controller implements grig.controller.Controller
             gridDisplay.set(scene, track, mode);
         });
 
+        clipView.setSceneUpdateCallback((track:Int, state:grig.controller.SceneState) -> {
+            var mode = switch state {
+                case Playing: SceneButtonMode.Green;
+                case PlayingQueued: SceneButtonMode.BlinkingGreen;
+                case StopQueued: SceneButtonMode.Green;
+                case Stopped: SceneButtonMode.Off;
+            }
+            sceneLaunchDisplay.set(0, track, mode);
+        });
+
         pages.push({arrowDisplay: arrowDisplay, gridDisplay: gridDisplay, movable: clipView});
 
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.StopAllClips, () -> {

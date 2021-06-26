@@ -52,6 +52,17 @@ class MidiDisplay
         for (stateRow in states) {
             for (state in stateRow) {
                 midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOn, [state.midiNote, state.midiState], 0));
+                midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOff, [state.midiNote, state.midiState], 0));
+            }
+        }
+    }
+
+    public function displayClear(midiOut:grig.midi.MidiSender):Void
+    {
+        for (stateRow in states) {
+            for (state in stateRow) {
+                midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOn, [state.midiNote, defaultState], 0));
+                midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOff, [state.midiNote, defaultState], 0));
             }
         }
     }
