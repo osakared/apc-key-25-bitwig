@@ -10,7 +10,7 @@ abstract MidiTriggerList(Array<MidiTrigger>)
     public function handle(noteNumber:Int):Bool
     {
         for (midiTrigger in this) {
-            if (midiTrigger.handle(noteNumber)) return true;
+            midiTrigger.handle(noteNumber);
         }
         return false;
     }

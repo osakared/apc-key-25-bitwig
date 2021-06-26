@@ -25,6 +25,7 @@ class APCKey25Controller implements grig.controller.Controller
     private static inline var WIDTH:Int = 8;
     private static inline var HEIGHT:Int = 5;
     private static var ARROW_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right]];
+    private static var SCENE_BUTTONS = [[ButtonNotes.ClipStop, ButtonNotes.Solo, ButtonNotes.RecArm, ButtonNotes.Mute, ButtonNotes.Select]];
 
     var host:Host;
     var midiOut:grig.midi.MidiSender = null;
@@ -97,6 +98,7 @@ class APCKey25Controller implements grig.controller.Controller
 
     private function setupClipView(clipView:grig.controller.ClipView)
     {
+        // Callbacks for arrow displays
         var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
         clipView.onCanMoveDownChanged((value:Bool) -> {
             arrowDisplay.set(0, ArrowMode.Down, trackButtonModeOn(value));
@@ -111,13 +113,17 @@ class APCKey25Controller implements grig.controller.Controller
             arrowDisplay.set(0, ArrowMode.Right, trackButtonModeOn(value));
         });
 
+        // Triggers for scene launchers
+        midiTriggerList.push(new MultiNoteTrigger(SCENE_BUTTONS[0], (idx:Int) -> {
+            if (!shift) clipView.playScene(idx);
+        }));
+
         var gridNotes = new Array<Array<Int>>();
         for (i in 0...HEIGHT) {
             gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
         }
         var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
         clipView.setClipStateUpdateCallback((track:Int, scene:Int, state:grig.controller.ClipState) -> {
-            host.logMessage('$state');
             var mode = switch state {
                 case Playing: GridButtonMode.Green;
                 case Recording: GridButtonMode.Red;
@@ -217,9 +223,8 @@ class APCKey25Controller implements grig.controller.Controller
             ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right, ButtonNotes.Volume, ButtonNotes.Pan,
             ButtonNotes.Send, ButtonNotes.Device
         ]], TrackButtonMode.Off, 0);
-        var sceneButtons = [[ButtonNotes.ClipStop, ButtonNotes.Solo, ButtonNotes.RecArm, ButtonNotes.Mute, ButtonNotes.Select]];
-        sceneLaunchDisplay = new MidiDisplay(sceneButtons, SceneButtonMode.Off, 0);
-        trackModeDisplay = new MidiDisplay(sceneButtons, SceneButtonMode.Off, 0);
+        sceneLaunchDisplay = new MidiDisplay(SCENE_BUTTONS, SceneButtonMode.Off, 0);
+        trackModeDisplay = new MidiDisplay(SCENE_BUTTONS, SceneButtonMode.Off, 0);
     }
 
     private function setupTransport(transport:grig.controller.Transport)
