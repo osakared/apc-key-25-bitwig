@@ -28,7 +28,7 @@ class APCKey25Controller implements grig.controller.Controller
 
     var host:Host;
     var midiOut:grig.midi.MidiSender = null;
-    var pages = new Array<{arrowDisplay:MidiDisplay, movable:grig.controller.Movable}>();
+    var pages = new Array<{arrowDisplay:MidiDisplay, gridDisplay:MidiDisplay, movable:grig.controller.Movable}>();
     var pageIndex:Int = 0;
 
     var shift:Bool = false;
@@ -110,7 +110,27 @@ class APCKey25Controller implements grig.controller.Controller
         clipView.onCanMoveRightChanged((value:Bool) -> {
             arrowDisplay.set(0, ArrowMode.Right, trackButtonModeOn(value));
         });
-        pages.push({arrowDisplay: arrowDisplay, movable: clipView});
+
+        var gridNotes = new Array<Array<Int>>();
+        for (i in 0...HEIGHT) {
+            gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
+        }
+        var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
+        clipView.setClipStateUpdateCallback((track:Int, scene:Int, state:grig.controller.ClipState) -> {
+            host.logMessage('$state');
+            var mode = switch state {
+                case Playing: GridButtonMode.Green;
+                case Recording: GridButtonMode.Red;
+                case Stopped: GridButtonMode.Amber;
+                case PlayingQueued: GridButtonMode.BlinkingGreen;
+                case RecordingQueued: GridButtonMode.BlinkingRed;
+                case StopQueued: GridButtonMode.BlinkingAmber;
+                case Empty: GridButtonMode.Off;
+            }
+            gridDisplay.set(scene, track, mode);
+        });
+
+        pages.push({arrowDisplay: arrowDisplay, gridDisplay: gridDisplay, movable: clipView});
 
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.StopAllClips, () -> {
             if (shift) clipView.returnToArrangement();
@@ -259,6 +279,12 @@ class APCKey25Controller implements grig.controller.Controller
         pages[pageIndex].arrowDisplay.display(midiOut);
     }
 
+    private function displayGrid():Void
+    {
+        if (pages.length == 0) return;
+        pages[pageIndex].gridDisplay.display(midiOut);
+    }
+
     public function flush()
     {
         if (shift) {
@@ -269,5 +295,6 @@ class APCKey25Controller implements grig.controller.Controller
             trackCtrlDisplay.display(midiOut);
             sceneLaunchDisplay.display(midiOut);
         }
+        displayGrid();
     }
 }
