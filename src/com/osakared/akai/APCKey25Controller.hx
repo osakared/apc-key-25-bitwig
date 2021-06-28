@@ -26,26 +26,29 @@ class APCKey25Controller implements grig.controller.Controller
     private static inline var HEIGHT:Int = 5;
     private static var ARROW_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right]];
     private static var SCENE_BUTTONS = [[ButtonNotes.ClipStop, ButtonNotes.Solo, ButtonNotes.RecArm, ButtonNotes.Mute, ButtonNotes.Select]];
+    private static var TRACK_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right,
+                                         ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]];
 
-    var host:Host;
-    var midiOut:grig.midi.MidiSender = null;
-    var pages = new Array<{arrowDisplay:MidiDisplay, gridDisplay:MidiDisplay, movable:grig.controller.Movable}>();
-    var pageIndex:Int = 0;
+    private var host:Host;
+    private var midiOut:grig.midi.MidiSender = null;
+    private var pages = new Array<{arrowDisplay:MidiDisplay, gridDisplay:MidiDisplay, movable:grig.controller.Movable}>();
+    private var pageIndex:Int = 0;
 
-    var shift:Bool = false;
-    var _knobMode:KnobMode;
-    var knobMode(get, set):KnobMode;
-    var _trackMode:TrackMode;
-    var trackMode(get, set):TrackMode;
+    private var shift:Bool = false;
+    private var _knobMode:KnobMode;
+    private var knobMode(get, set):KnobMode;
 
-    var midiTriggerList:MidiTriggerList = null;
-    var offMidiTriggerList:MidiTriggerList = null;
+    private var trackCtrlDisplays = new Array<MidiDisplay>();
+    private var _trackMode:TrackMode;
+    private var trackMode(get, set):TrackMode;
 
-    var emptyArrowDisplay:MidiDisplay = null;
-    var knobCtrlDisplay:MidiDisplay = null;
-    var trackCtrlDisplay:MidiDisplay = null;
-    var trackModeDisplay:MidiDisplay = null;
-    var sceneLaunchDisplay:MidiDisplay = null;
+    private var midiTriggerList:MidiTriggerList = null;
+    private var offMidiTriggerList:MidiTriggerList = null;
+
+    private var emptyArrowDisplay:MidiDisplay = null;
+    private var knobCtrlDisplay:MidiDisplay = null;
+    private var trackModeDisplay:MidiDisplay = null;
+    private var sceneLaunchDisplay:MidiDisplay = null;
 
     private function get_knobMode():KnobMode
     {
@@ -154,6 +157,26 @@ class APCKey25Controller implements grig.controller.Controller
         }));
     }
 
+    private function setupTrackView(trackView:grig.controller.TrackView):Void
+    {
+        for (i in 0...SCENE_BUTTONS[0].length) {
+            trackCtrlDisplays.push(new MidiDisplay(TRACK_BUTTONS, TrackButtonMode.Off, 0));
+        }
+
+        trackView.setSelectTrackUpdateCallback((track:Int) -> {
+            trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red);
+        });
+
+        midiTriggerList.push(new MultiNoteTrigger(TRACK_BUTTONS[0], (idx:Int) -> {
+            if (!shift) {
+                switch trackMode {
+                    case Select: trackView.selectTrack(idx);
+                    default: true;
+                }
+            }
+        }));
+    }
+
     private function movePage(direction:Direction):Void
     {
         if (pages.length == 0) return;
@@ -229,10 +252,6 @@ class APCKey25Controller implements grig.controller.Controller
     {
         emptyArrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
         knobCtrlDisplay = new MidiDisplay([[ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]], TrackButtonMode.Off, 0);
-        trackCtrlDisplay = new MidiDisplay([[
-            ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right, ButtonNotes.Volume, ButtonNotes.Pan,
-            ButtonNotes.Send, ButtonNotes.Device
-        ]], TrackButtonMode.Off, 0);
         sceneLaunchDisplay = new MidiDisplay(SCENE_BUTTONS, SceneButtonMode.Off, 0);
         trackModeDisplay = new MidiDisplay(SCENE_BUTTONS, SceneButtonMode.Off, 0);
     }
@@ -263,8 +282,16 @@ class APCKey25Controller implements grig.controller.Controller
         });
         host.createClipView(WIDTH, HEIGHT).handle((outcome) -> {
             switch outcome {
-                case Success(clipView): setupClipView(clipView);
-                case Failure(error): host.logMessage('Clip view unavailable: ${error.message}');
+                case Success(clipView):
+                    setupClipView(clipView);
+                    setupTrackView(clipView.getTrackView());
+                case Failure(error):
+                    host.createTrackView(WIDTH).handle((trackOutcome) -> {
+                        switch trackOutcome {
+                            case Success(trackView): setupTrackView(trackView);
+                            case Failure(trackError): host.logMessage('ClipView and TrackView not available:\n\t$error\n\t$trackOutcome');
+                        }
+                    });
             }
         });
         host.getMidiIn(0).handle((outcome) -> {
@@ -300,6 +327,15 @@ class APCKey25Controller implements grig.controller.Controller
         pages[pageIndex].gridDisplay.display(midiOut);
     }
 
+    private function displayTrackCtrlDisplays()
+    {
+        if (trackCtrlDisplays.length == 0) {
+            knobCtrlDisplay.displayClear(midiOut);
+            emptyArrowDisplay.display(midiOut);
+        }
+        trackCtrlDisplays[trackMode].display(midiOut);
+    }
+
     public function flush()
     {
         if (shift) {
@@ -307,8 +343,8 @@ class APCKey25Controller implements grig.controller.Controller
             knobCtrlDisplay.display(midiOut);
             trackModeDisplay.display(midiOut);
         } else {
-            trackCtrlDisplay.display(midiOut);
             sceneLaunchDisplay.display(midiOut);
+            displayTrackCtrlDisplays();
         }
         displayGrid();
     }
