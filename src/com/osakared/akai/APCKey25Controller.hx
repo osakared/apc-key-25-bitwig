@@ -159,7 +159,7 @@ class APCKey25Controller implements grig.controller.Controller
 
     private function setupTrackView(trackView:grig.controller.TrackView):Void
     {
-        for (i in 0...SCENE_BUTTONS[0].length) {
+        for (_ in 0...SCENE_BUTTONS[0].length) {
             trackCtrlDisplays.push(new MidiDisplay(TRACK_BUTTONS, TrackButtonMode.Off, 0));
         }
 
@@ -167,9 +167,19 @@ class APCKey25Controller implements grig.controller.Controller
             trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red);
         });
 
+        trackView.setIsMutedCallback((track:Int, muted:Bool) -> {
+            trackCtrlDisplays[TrackMode.Mute].set(0, track, muted ? TrackButtonMode.Red : TrackButtonMode.Off);
+        });
+
+        trackView.setIsSoloedCallback((track:Int, soloed:Bool) -> {
+            trackCtrlDisplays[TrackMode.Solo].set(0, track, soloed ? TrackButtonMode.Red : TrackButtonMode.Off);
+        });
+
         midiTriggerList.push(new MultiNoteTrigger(TRACK_BUTTONS[0], (idx:Int) -> {
             if (!shift) {
                 switch trackMode {
+                    case Solo: trackView.soloTrack(idx);
+                    case Mute: trackView.muteTrack(idx);
                     case Select: trackView.selectTrack(idx);
                     default: true;
                 }
