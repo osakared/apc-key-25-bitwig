@@ -103,17 +103,14 @@ class APCKey25Controller implements grig.controller.Controller
     {
         // Callbacks for arrow displays
         var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
-        clipView.onCanMoveDownChanged((value:Bool) -> {
-            arrowDisplay.set(0, ArrowMode.Down, trackButtonModeOn(value));
-        });
-        clipView.onCanMoveUpChanged((value:Bool) -> {
-            arrowDisplay.set(0, ArrowMode.Up, trackButtonModeOn(value));
-        });
-        clipView.onCanMoveLeftChanged((value:Bool) -> {
-            arrowDisplay.set(0, ArrowMode.Left, trackButtonModeOn(value));
-        });
-        clipView.onCanMoveRightChanged((value:Bool) -> {
-            arrowDisplay.set(0, ArrowMode.Right, trackButtonModeOn(value));
+        clipView.addCanMoveChangedCallback((direction:grig.controller.Direction, canMove:Bool) -> {
+            var mode = switch direction {
+                case Up: ArrowMode.Up;
+                case Down: ArrowMode.Down;
+                case Left: ArrowMode.Left;
+                case Right: ArrowMode.Right;
+            }
+            arrowDisplay.set(0, mode, trackButtonModeOn(canMove));
         });
 
         // Triggers for scene launchers
@@ -126,7 +123,7 @@ class APCKey25Controller implements grig.controller.Controller
             gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
         }
         var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
-        clipView.setClipStateUpdateCallback((track:Int, scene:Int, state:grig.controller.ClipState) -> {
+        clipView.addClipStateUpdateCallback((track:Int, scene:Int, state:grig.controller.ClipState) -> {
             var mode = switch state {
                 case Playing: GridButtonMode.Green;
                 case Recording: GridButtonMode.Red;
@@ -139,7 +136,7 @@ class APCKey25Controller implements grig.controller.Controller
             gridDisplay.set(scene, track, mode);
         });
 
-        clipView.setSceneUpdateCallback((track:Int, state:grig.controller.SceneState) -> {
+        clipView.addSceneUpdateCallback((track:Int, state:grig.controller.SceneState) -> {
             var mode = switch state {
                 case Playing: SceneButtonMode.Green;
                 case PlayingQueued: SceneButtonMode.BlinkingGreen;
@@ -162,23 +159,39 @@ class APCKey25Controller implements grig.controller.Controller
         for (_ in 0...SCENE_BUTTONS[0].length) {
             trackCtrlDisplays.push(new MidiDisplay(TRACK_BUTTONS, TrackButtonMode.Off, 0));
         }
-
-        trackView.setSelectTrackUpdateCallback((track:Int) -> {
-            trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red);
+        
+        trackView.addTrackStateUpdateCallback((track:Int, state:grig.controller.TrackState) -> {
+            host.logMessage('$track $state');
+            var mode = switch state {
+                case Playing: TrackButtonMode.Off;
+                case StopQueued: TrackButtonMode.BlinkingRed;
+                case Stopped: TrackButtonMode.Red;
+            }
+            trackCtrlDisplays[TrackMode.ClipStop].set(0, track, mode);
         });
 
-        trackView.setIsMutedCallback((track:Int, muted:Bool) -> {
+        trackView.addIsSoloedCallback((track:Int, soloed:Bool) -> {
+            trackCtrlDisplays[TrackMode.Solo].set(0, track, soloed ? TrackButtonMode.Red : TrackButtonMode.Off);
+        });
+
+        trackView.addIsArmedCallback((track:Int, isArmed:Bool) -> {
+            trackCtrlDisplays[TrackMode.RecArm].set(0, track, isArmed ? TrackButtonMode.Red : TrackButtonMode.Off);
+        });
+
+        trackView.addIsMutedCallback((track:Int, muted:Bool) -> {
             trackCtrlDisplays[TrackMode.Mute].set(0, track, muted ? TrackButtonMode.Red : TrackButtonMode.Off);
         });
 
-        trackView.setIsSoloedCallback((track:Int, soloed:Bool) -> {
-            trackCtrlDisplays[TrackMode.Solo].set(0, track, soloed ? TrackButtonMode.Red : TrackButtonMode.Off);
+        trackView.addSelectTrackUpdateCallback((track:Int) -> {
+            trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red);
         });
 
         midiTriggerList.push(new MultiNoteTrigger(TRACK_BUTTONS[0], (idx:Int) -> {
             if (!shift) {
                 switch trackMode {
+                    case ClipStop: trackView.stopTrack(idx);
                     case Solo: trackView.soloTrack(idx);
+                    case RecArm: trackView.armTrack(idx);
                     case Mute: trackView.muteTrack(idx);
                     case Select: trackView.selectTrack(idx);
                     default: true;
@@ -193,10 +206,10 @@ class APCKey25Controller implements grig.controller.Controller
 
         var page = pages[pageIndex].movable;
         switch (direction) {
-            case Left: page.moveLeft();
-            case Right: page.moveRight();
-            case Up: page.moveUp();
-            case Down: page.moveDown();
+            case Left: page.move(Left);
+            case Right: page.move(Right);
+            case Up: page.move(Up);
+            case Down: page.move(Down);
         }
     }
 
