@@ -13,7 +13,7 @@ The old javascript-based Bitwig controller script is still here for anyone who w
 
 * ~~Shift + Sustain toggles velocity sensitivity on and off.~~
 * Shift + Sustain toggles lancher vs. matrix keyboard mode
-* Shift + clip button deletes a clip when in rec/arm mode.
+* Shift + clip button records into a clip.
 * Shift + "Stop All Clips" returns to arrangement.
 * Shift + Play/Pause does tap tempo.
 * Shift + Record depends on knob mode:

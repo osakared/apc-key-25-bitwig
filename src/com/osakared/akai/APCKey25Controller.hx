@@ -154,7 +154,8 @@ class APCKey25Controller implements grig.controller.Controller
         }));
 
         midiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int) -> {
-            clipView.playClip(y, x);
+            if (shift) clipView.recordClip(y, x); // let's make this configurable!
+            else clipView.playClip(y, x);
         }));
     }
 
