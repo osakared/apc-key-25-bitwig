@@ -152,6 +152,10 @@ class APCKey25Controller implements grig.controller.Controller
             if (shift) clipView.returnToArrangement();
             else clipView.stopAllClips();
         }));
+
+        midiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int) -> {
+            clipView.playClip(y, x);
+        }));
     }
 
     private function setupTrackView(trackView:grig.controller.TrackView):Void
