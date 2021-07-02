@@ -4,8 +4,8 @@ interface MidiTrigger
 {
     /**
      * Handles if the note number matches
-     * @param noteNumber midi note number
+     * @param message midi message
      * @return Bool whether it was handled or not
      */
-    public function handle(noteNumber:Int):Bool;
+    public function handle(message:grig.midi.MidiMessage):Bool;
 }

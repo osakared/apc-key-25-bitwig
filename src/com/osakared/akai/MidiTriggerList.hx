@@ -7,10 +7,10 @@ abstract MidiTriggerList(Array<MidiTrigger>)
         this = new Array<MidiTrigger>();
     }
 
-    public function handle(noteNumber:Int):Bool
+    public function handle(message:grig.midi.MidiMessage):Bool
     {
         for (midiTrigger in this) {
-            midiTrigger.handle(noteNumber);
+            midiTrigger.handle(message);
         }
         return false;
     }

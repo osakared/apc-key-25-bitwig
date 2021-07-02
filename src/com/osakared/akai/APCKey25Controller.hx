@@ -24,6 +24,8 @@ class APCKey25Controller implements grig.controller.Controller
 {
     private static inline var WIDTH:Int = 8;
     private static inline var HEIGHT:Int = 5;
+    private static inline var LOWEST_CC = 48;
+
     private static var ARROW_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right]];
     private static var SCENE_BUTTONS = [[ButtonNotes.ClipStop, ButtonNotes.Solo, ButtonNotes.RecArm, ButtonNotes.Mute, ButtonNotes.Select]];
     private static var TRACK_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right,
@@ -42,13 +44,20 @@ class APCKey25Controller implements grig.controller.Controller
     private var _trackMode:TrackMode;
     private var trackMode(get, set):TrackMode;
 
-    private var midiTriggerList:MidiTriggerList = null;
-    private var offMidiTriggerList:MidiTriggerList = null;
+    private var midiTriggerList = new MidiTriggerList();
+    private var offMidiTriggerList = new MidiTriggerList();
+    private var ctrlMidiTriggerList = new MidiTriggerList();
 
+    private var midiScreen = new MidiScreen();
     private var emptyArrowDisplay:MidiDisplay = null;
     private var knobCtrlDisplay:MidiDisplay = null;
     private var trackModeDisplay:MidiDisplay = null;
     private var sceneLaunchDisplay:MidiDisplay = null;
+
+    // This is a break from my usual policy of not trying to persist things that are received in callbacks
+    // but the code would be annoyingly complex otherwise
+    private var sends = new Array<grig.controller.SendView>();
+    private var parameterView:grig.controller.ParameterView = null;
 
     private function get_knobMode():KnobMode
     {
@@ -57,6 +66,10 @@ class APCKey25Controller implements grig.controller.Controller
 
     private function set_knobMode(_knobMode:KnobMode):KnobMode
     {
+        if (this._knobMode == _knobMode && _knobMode == KnobMode.Send) {
+            for (send in sends) send.cycle();
+            this._knobMode;
+        }
         this._knobMode = _knobMode;
         knobCtrlDisplay.setExclusive(0, _knobMode, TrackButtonMode.Red);
         return this._knobMode;
@@ -87,9 +100,11 @@ class APCKey25Controller implements grig.controller.Controller
             return;
         }
         if (message.messageType == NoteOn) {
-            midiTriggerList.handle(message.byte2);
+            midiTriggerList.handle(message);
         } else if (message.messageType == NoteOff) {
-            offMidiTriggerList.handle(message.byte2);
+            offMidiTriggerList.handle(message);
+        } else if (message.messageType == ControlChange) {
+            ctrlMidiTriggerList.handle(message);
         }
     }
 
@@ -114,7 +129,7 @@ class APCKey25Controller implements grig.controller.Controller
         });
 
         // Triggers for scene launchers
-        midiTriggerList.push(new MultiNoteTrigger(SCENE_BUTTONS[0], (idx:Int) -> {
+        midiTriggerList.push(new MultiNoteTrigger(SCENE_BUTTONS[0], (idx:Int, _:Int) -> {
             if (!shift) clipView.playScene(idx);
         }));
 
@@ -148,12 +163,12 @@ class APCKey25Controller implements grig.controller.Controller
 
         pages.push({arrowDisplay: arrowDisplay, gridDisplay: gridDisplay, movable: clipView});
 
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.StopAllClips, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.StopAllClips, (_:Int) -> {
             if (shift) clipView.returnToArrangement();
             else clipView.stopAllClips();
         }));
 
-        midiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int) -> {
+        midiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int, _:Int) -> {
             if (shift) clipView.recordClip(y, x); // let's make this configurable!
             else clipView.playClip(y, x);
         }));
@@ -166,7 +181,6 @@ class APCKey25Controller implements grig.controller.Controller
         }
         
         trackView.addTrackStateUpdateCallback((track:Int, state:grig.controller.TrackState) -> {
-            host.logMessage('$track $state');
             var mode = switch state {
                 case Playing: TrackButtonMode.Off;
                 case StopQueued: TrackButtonMode.BlinkingRed;
@@ -191,7 +205,7 @@ class APCKey25Controller implements grig.controller.Controller
             trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red);
         });
 
-        midiTriggerList.push(new MultiNoteTrigger(TRACK_BUTTONS[0], (idx:Int) -> {
+        midiTriggerList.push(new MultiNoteTrigger(TRACK_BUTTONS[0], (idx:Int, _:Int) -> {
             if (!shift) {
                 switch trackMode {
                     case ClipStop: trackView.stopTrack(idx);
@@ -199,8 +213,30 @@ class APCKey25Controller implements grig.controller.Controller
                     case RecArm: trackView.armTrack(idx);
                     case Mute: trackView.muteTrack(idx);
                     case Select: trackView.selectTrack(idx);
-                    default: true;
                 }
+            }
+        }));
+
+        for (i in 0...trackView.getNumTracks()) {
+            switch trackView.getSendView(i) {
+                case Success(send):
+                    sends.push(send);
+                case Failure(error):
+                    host.logMessage('Sends unavailable: ${error.message}');
+                    break;
+            }
+        }
+
+        var knobCCs = [for (i in 0...WIDTH) i + LOWEST_CC];
+        ctrlMidiTriggerList.push(new MultiNoteTrigger(knobCCs, (idx:Int, value:Int) -> {
+            var valueF:Float = value / 127;
+            switch knobMode {
+                case Volume: trackView.setVolume(idx, valueF);
+                case Pan: trackView.setPan(idx, valueF);
+                case Send:
+                    if (idx < sends.length) sends[idx].setLevel(0, valueF);
+                case Device:
+                    if (parameterView != null) parameterView.setValue(idx, valueF);
             }
         }));
     }
@@ -220,58 +256,55 @@ class APCKey25Controller implements grig.controller.Controller
 
     private function setupTriggers()
     {
-        midiTriggerList = new MidiTriggerList();
-
         // Transport stuff
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, (_:Int) -> {
             shift = true;
         }));
 
         // Track controls/arrows/knob controls
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Up, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Up, (_:Int) -> {
             if (shift) movePage(Up);
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Down, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Down, (_:Int) -> {
             if (shift) movePage(Down);
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Left, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Left, (_:Int) -> {
             if (shift) movePage(Left);
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Right, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Right, (_:Int) -> {
             if (shift) movePage(Right);
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Volume, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Volume, (_:Int) -> {
             if (shift) knobMode = KnobMode.Volume;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Pan, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Pan, (_:Int) -> {
             if (shift) knobMode = KnobMode.Pan;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Send, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Send, (_:Int) -> {
             if (shift) knobMode = KnobMode.Send;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Device, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Device, (_:Int) -> {
             if (shift) knobMode = KnobMode.Device;
         }));
 
         // Scene controls
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.ClipStop, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.ClipStop, (_:Int) -> {
             if (shift) trackMode = TrackMode.ClipStop;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Solo, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Solo, (_:Int) -> {
             if (shift) trackMode = TrackMode.Solo;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.RecArm, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.RecArm, (_:Int) -> {
             if (shift) trackMode = TrackMode.RecArm;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Mute, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Mute, (_:Int) -> {
             if (shift) trackMode = TrackMode.Mute;
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Select, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Select, (_:Int) -> {
             if (shift) trackMode = TrackMode.Select;
         }));
 
-        offMidiTriggerList = new MidiTriggerList();
-        offMidiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, () -> {
+        offMidiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, (_:Int) -> {
             shift = false;
         }));
     }
@@ -286,11 +319,11 @@ class APCKey25Controller implements grig.controller.Controller
 
     private function setupTransport(transport:grig.controller.Transport)
     {
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, (_:Int) -> {
             if (shift) transport.tapTempo();
             else transport.play();
         }));
-        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, () -> {
+        midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, (_:Int) -> {
             if (shift) true; // do something like this: cursorRemoteControls.selectNextPage(true);
             else transport.record();
         }));
@@ -308,18 +341,25 @@ class APCKey25Controller implements grig.controller.Controller
                 case Failure(error): host.logMessage('Transport unavailable: ${error.message}');
             }
         });
-        host.createClipView(WIDTH, HEIGHT).handle((outcome) -> {
+        host.createClipView(WIDTH, HEIGHT, 1).handle((outcome) -> {
             switch outcome {
                 case Success(clipView):
                     setupClipView(clipView);
                     setupTrackView(clipView.getTrackView());
                 case Failure(error):
-                    host.createTrackView(WIDTH).handle((trackOutcome) -> {
+                    host.createTrackView(WIDTH, HEIGHT, 1).handle((trackOutcome) -> {
                         switch trackOutcome {
                             case Success(trackView): setupTrackView(trackView);
                             case Failure(trackError): host.logMessage('ClipView and TrackView not available:\n\t$error\n\t$trackOutcome');
                         }
                     });
+            }
+        });
+        host.createParameterView(WIDTH).handle((outcome) -> {
+            switch outcome {
+                case Success(parameterView):
+                    this.parameterView = parameterView;
+                case Failure(error): host.logMessage('Parameter view unavailable: ${error.message}');
             }
         });
         host.getMidiIn(0).handle((outcome) -> {
@@ -343,37 +383,38 @@ class APCKey25Controller implements grig.controller.Controller
     private function displayArrows():Void
     {
         if (pages.length == 0) {
-            emptyArrowDisplay.display(midiOut);
+            emptyArrowDisplay.display(midiScreen);
             return;
         }
-        pages[pageIndex].arrowDisplay.display(midiOut);
+        pages[pageIndex].arrowDisplay.display(midiScreen);
     }
 
     private function displayGrid():Void
     {
         if (pages.length == 0) return;
-        pages[pageIndex].gridDisplay.display(midiOut);
+        pages[pageIndex].gridDisplay.display(midiScreen);
     }
 
     private function displayTrackCtrlDisplays()
     {
         if (trackCtrlDisplays.length == 0) {
-            knobCtrlDisplay.displayClear(midiOut);
-            emptyArrowDisplay.display(midiOut);
+            knobCtrlDisplay.displayClear(midiScreen);
+            emptyArrowDisplay.display(midiScreen);
         }
-        trackCtrlDisplays[trackMode].display(midiOut);
+        trackCtrlDisplays[trackMode].display(midiScreen);
     }
 
     public function flush()
     {
         if (shift) {
             displayArrows();
-            knobCtrlDisplay.display(midiOut);
-            trackModeDisplay.display(midiOut);
+            knobCtrlDisplay.display(midiScreen);
+            trackModeDisplay.display(midiScreen);
         } else {
-            sceneLaunchDisplay.display(midiOut);
+            sceneLaunchDisplay.display(midiScreen);
             displayTrackCtrlDisplays();
         }
         displayGrid();
+        midiScreen.display(midiOut);
     }
 }
