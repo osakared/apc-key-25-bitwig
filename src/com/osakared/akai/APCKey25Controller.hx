@@ -68,7 +68,10 @@ class APCKey25Controller implements grig.controller.Controller
     {
         if (this._knobMode == _knobMode && _knobMode == KnobMode.Send) {
             for (send in sends) send.cycle();
-            this._knobMode;
+            return this._knobMode;
+        }
+        if (this._knobMode == _knobMode && _knobMode == KnobMode.Device) {
+            if (parameterView != null) parameterView.cycle();
         }
         this._knobMode = _knobMode;
         knobCtrlDisplay.setExclusive(0, _knobMode, TrackButtonMode.Red);
