@@ -11,21 +11,15 @@ The old javascript-based Bitwig controller script is still here for anyone who w
 
 ### Difference With Official Ableton Script:
 
-* ~~Shift + Sustain toggles velocity sensitivity on and off.~~
 * Shift + Sustain toggles lancher vs. matrix keyboard mode
 * Shift + clip button records into a clip.
 * Shift + "Stop All Clips" returns to arrangement.
 * Shift + Play/Pause does tap tempo.
-* Shift + Record depends on knob mode:
-  * Cycles through send in send mode
-  * Cycles through remote pages in device mode
+* Shift + Record stops.
+* Shift + knob does fine-tuning mode. (hmmm...)
 * In mute mode, the light indicates that the track _is_ muted.
-
-### Nice to Haves:
-
-* Ability to remap Shift + [Sustain, Play/Pause, Rec] since there are more features we could add than just the three and different people have different workflows
-* Marquee/image mode (like Bitwig logo or APC on startup)
-* Ability to use clip launchers as a keyboard (with selectable modes)
+* Repeatedly pressing Shift + Send cycles through sends
+* Repeatedly pressing Shift + Device cycles through device pages
 
 Installation
 ------------

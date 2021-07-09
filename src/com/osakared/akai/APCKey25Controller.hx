@@ -32,7 +32,6 @@ class APCKey25Controller implements grig.controller.Controller
                                          ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]];
 
     private var host:Host;
-    private var midiOut:grig.midi.MidiSender = null;
     private var pages = new Array<{arrowDisplay:MidiDisplay, gridDisplay:MidiDisplay, movable:grig.controller.Movable}>();
     private var pageIndex:Int = 0;
 
@@ -54,10 +53,10 @@ class APCKey25Controller implements grig.controller.Controller
     private var trackModeDisplay:MidiDisplay = null;
     private var sceneLaunchDisplay:MidiDisplay = null;
 
-    // This is a break from my usual policy of not trying to persist things that are received in callbacks
-    // but the code would be annoyingly complex otherwise
+    // Stuff we can't rely on being filled since it comes from promises
     private var sends = new Array<grig.controller.SendView>();
     private var parameterView:grig.controller.ParameterView = null;
+    private var midiOut:grig.midi.MidiSender = null;
 
     private function get_knobMode():KnobMode
     {
@@ -142,6 +141,7 @@ class APCKey25Controller implements grig.controller.Controller
         }
         var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
         clipView.addClipStateUpdateCallback((track:Int, scene:Int, state:grig.controller.ClipState) -> {
+            host.logMessage('$track,$scene: $state');
             var mode = switch state {
                 case Playing: GridButtonMode.Green;
                 case Recording: GridButtonMode.Red;
@@ -327,7 +327,7 @@ class APCKey25Controller implements grig.controller.Controller
             else transport.play();
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, (_:Int) -> {
-            if (shift) true; // do something like this: cursorRemoteControls.selectNextPage(true);
+            if (shift) transport.stop();
             else transport.record();
         }));
     }
@@ -371,7 +371,18 @@ class APCKey25Controller implements grig.controller.Controller
                 case Failure(error): host.logMessage('Midi in unavailable: ${error.message}');
             }
         });
-        midiOut = host.getMidiOut(0);
+        host.getMidiOut(0).handle((outcome) -> {
+            switch outcome {
+                case Success(_midiOut): midiOut = _midiOut;
+                case Failure(error): host.logMessage('Midi out unavailable: ${error.message}');
+            }
+        });
+        host.getHostMidiOut('', 0, 1).handle((outcome) -> {
+            switch outcome {
+                case Success(hostMidiOut): host.logMessage('Initiated midi output');
+                case Failure(error): host.logMessage('Host midi out unavailable: ${error.message}');
+            }
+        });
         setupDisplays();
         // TODO get knob mode from settings
         knobMode = KnobMode.Volume;
@@ -409,6 +420,7 @@ class APCKey25Controller implements grig.controller.Controller
 
     public function flush()
     {
+        if (midiOut == null) return;
         if (shift) {
             displayArrows();
             knobCtrlDisplay.display(midiScreen);

@@ -26,8 +26,8 @@ class MidiScreen
             var val = displays[key];
             if (val.current == val.pending) continue;
             var message = [key, val.pending];
-            midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOn, message, 0));
-            midiOut.sendMessage(grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOff, message, 0));
+            var midiMessage = grig.midi.MidiMessage.ofMessageType(grig.midi.MessageType.NoteOn, message, 0);
+            midiOut.sendMessage(midiMessage);
             val.current = val.pending;
         }
     }
