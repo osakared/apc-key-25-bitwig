@@ -7,8 +7,6 @@ Introduction
 This is a controller extension for
 [APC Key 25](http://www.akaipro.com/product/apc-key-25). Works with [Bitwig](http://www.bitwig.com) and any other DAW supported by grig.controller in the future.
 
-The old javascript-based Bitwig controller script is still here for anyone who wants to use it for now but the haxe/jvm version supercedes it and should be better than it in every way.
-
 ### Difference With Official Ableton Script:
 
 * Shift + Sustain toggles lancher vs. matrix keyboard mode
@@ -23,7 +21,7 @@ The old javascript-based Bitwig controller script is still here for anyone who w
 Installation
 ------------
 
-Copy APCKey25.bwextension into your local extensions directory:
+Get latest [release on github](https://github.com/osakared/apc-key-25-bitwig/releases). Copy APCKey25.bwextension into your local extensions directory:
 
 * `~/Documents/Bitwig\ Studio/Extensions/` in macos
 * `~/Bitwig Studio/Extensions/` in linux
