@@ -10,6 +10,19 @@ class MidiDisplay
     private var states = new Array<Array<DisplayState>>();
     private var defaultState:Int;
     private var channel:Int;
+    public var width(get, never):Int;
+    public var height(get, never):Int;
+
+    private function get_width():Int
+    {
+        return if (states.length > 0) states[0].length;
+        else 0;
+    }
+
+    private function get_height():Int
+    {
+        return states.length;        
+    }
 
     public function new(midiNotes:Array<Array<Int>>, defaultState:Int, channel:Int)
     {

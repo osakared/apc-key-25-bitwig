@@ -1,5 +1,6 @@
-# @install: lix --silent download "haxelib:/grig.midi#0.0.6" into grig.midi/0.0.6/haxelib
+# @install: lix --silent download "haxelib:/grig.midi#0.0.7" into grig.midi/0.0.7/haxelib
+-lib grig.pitch
 -lib thx.core
 -lib tink_core
--cp ${HAXE_LIBCACHE}/grig.midi/0.0.6/haxelib/src
--D grig.midi=0.0.6
+-cp ${HAXE_LIBCACHE}/grig.midi/0.0.7/haxelib/src
+-D grig.midi=0.0.7

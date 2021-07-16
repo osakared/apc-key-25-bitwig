@@ -1,6 +1,7 @@
 -cp src
 -lib grig.controller
 -lib grig.midi
+-lib grig.pitch
 -lib thx.core
 -lib tink_core
 com.osakared.akai.APCKey25Controller

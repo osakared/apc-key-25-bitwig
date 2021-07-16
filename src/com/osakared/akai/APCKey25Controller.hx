@@ -1,15 +1,8 @@
 package com.osakared.akai;
 
+import grig.midi.MidiSender;
 import grig.controller.Host;
 import grig.midi.MidiMessage;
-
-enum Direction
-{
-    Left;
-    Right;
-    Up;
-    Down;
-}
 
 @name("APC Key 25")
 @author("pinkboi")
@@ -31,8 +24,21 @@ class APCKey25Controller implements grig.controller.Controller
     private static var TRACK_BUTTONS = [[ButtonNotes.Up, ButtonNotes.Down, ButtonNotes.Left, ButtonNotes.Right,
                                          ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]];
 
+    private var gridNotes:Array<Array<Int>>;
+    private var gridDisplayTable:MidiDisplayTable = {
+        defaultOnState: GridButtonMode.Green,
+        altOnState: GridButtonMode.Amber,
+        offState: GridButtonMode.Off,
+        playingState: GridButtonMode.Green,
+        recordingState: GridButtonMode.Red,
+        stoppedState: GridButtonMode.Amber,
+        playingQueuedState: GridButtonMode.BlinkingGreen,
+        recordingQueuedState: GridButtonMode.BlinkingRed,
+        stopQueuedState: GridButtonMode.BlinkingAmber
+    };
+
     private var host:Host;
-    private var pages = new Array<{arrowDisplay:MidiDisplay, gridDisplay:MidiDisplay, movable:grig.controller.Movable}>();
+    private var pages = new Array<{arrowDisplay:MidiDisplay, gridWidget:GridWidget}>();
     private var pageIndex:Int = 0;
 
     private var shift:Bool = false;
@@ -71,6 +77,7 @@ class APCKey25Controller implements grig.controller.Controller
         }
         if (this._knobMode == _knobMode && _knobMode == KnobMode.Device) {
             if (parameterView != null) parameterView.cycle();
+            return this._knobMode;
         }
         this._knobMode = _knobMode;
         knobCtrlDisplay.setExclusive(0, _knobMode, TrackButtonMode.Red);
@@ -91,14 +98,23 @@ class APCKey25Controller implements grig.controller.Controller
 
     public function new()
     {
+        gridNotes = new Array<Array<Int>>();
+        for (i in 0...HEIGHT) {
+            gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
+        }
     }
 
     private function onMidi(message:MidiMessage, delta:Float):Void
     {
         // We generally ignore notes on channel 1 as those are just for sending direct to the DAW
         if (message.channel == 1) {
-            // ...unless it's sustain and shift is already present, in which case, custom function time!
-            // if (message.messageType == NoteOn && ) 
+            // ...unless it's sustain and shift is already present, in which case, custom page time!
+            if (shift && message.messageType == ControlChange && message.controlChangeType == Sustain && message.byte3 == 0x7f) {
+                if (pages.length < 2) return;
+                pageIndex++;
+                if (pageIndex >= pages.length) pageIndex = 0;
+                host.showMessage('Page: ${pages[pageIndex].gridWidget.getTitle()}');
+            } 
             return;
         }
         if (message.messageType == NoteOn) {
@@ -135,24 +151,8 @@ class APCKey25Controller implements grig.controller.Controller
             if (!shift) clipView.playScene(idx);
         }));
 
-        var gridNotes = new Array<Array<Int>>();
-        for (i in 0...HEIGHT) {
-            gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
-        }
         var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
-        clipView.addClipStateUpdateCallback((track:Int, scene:Int, state:grig.controller.ClipState) -> {
-            host.logMessage('$track,$scene: $state');
-            var mode = switch state {
-                case Playing: GridButtonMode.Green;
-                case Recording: GridButtonMode.Red;
-                case Stopped: GridButtonMode.Amber;
-                case PlayingQueued: GridButtonMode.BlinkingGreen;
-                case RecordingQueued: GridButtonMode.BlinkingRed;
-                case StopQueued: GridButtonMode.BlinkingAmber;
-                case Empty: GridButtonMode.Off;
-            }
-            gridDisplay.set(scene, track, mode);
-        });
+        var clipLauncher = new ClipLauncher(gridDisplay, gridDisplayTable, clipView);
 
         clipView.addSceneUpdateCallback((track:Int, state:grig.controller.SceneState) -> {
             var mode = switch state {
@@ -164,16 +164,11 @@ class APCKey25Controller implements grig.controller.Controller
             sceneLaunchDisplay.set(0, track, mode);
         });
 
-        pages.push({arrowDisplay: arrowDisplay, gridDisplay: gridDisplay, movable: clipView});
+        pages.push({arrowDisplay: arrowDisplay, gridWidget: clipLauncher});
 
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.StopAllClips, (_:Int) -> {
             if (shift) clipView.returnToArrangement();
             else clipView.stopAllClips();
-        }));
-
-        midiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int, _:Int) -> {
-            if (shift) clipView.recordClip(y, x); // let's make this configurable!
-            else clipView.playClip(y, x);
         }));
     }
 
@@ -244,17 +239,23 @@ class APCKey25Controller implements grig.controller.Controller
         }));
     }
 
-    private function movePage(direction:Direction):Void
+
+    private function setupVirtualKeyboard(hostMidiOut:MidiSender):Void
+    {
+        var matrixKeyboardDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
+        var matrixKeyboard = new MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, WIDTH, HEIGHT);
+        matrixKeyboard.display();
+
+        var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
+        pages.push({arrowDisplay: arrowDisplay, gridWidget: matrixKeyboard});
+    }
+
+    private function movePage(direction:grig.controller.Direction):Void
     {
         if (pages.length == 0) return;
 
-        var page = pages[pageIndex].movable;
-        switch (direction) {
-            case Left: page.move(Left);
-            case Right: page.move(Right);
-            case Up: page.move(Up);
-            case Down: page.move(Down);
-        }
+        var page = pages[pageIndex].gridWidget;
+        page.move(direction);
     }
 
     private function setupTriggers()
@@ -307,8 +308,18 @@ class APCKey25Controller implements grig.controller.Controller
             if (shift) trackMode = TrackMode.Select;
         }));
 
+        midiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int, _:Int) -> {
+            if (pages.length < 1) return;
+            pages[pageIndex].gridWidget.pressButton(x, y, shift);
+        }));
+
         offMidiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Shift, (_:Int) -> {
             shift = false;
+        }));
+
+        offMidiTriggerList.push(new GridNoteTrigger(gridNotes, (x:Int, y:Int, _:Int) -> {
+            if (pages.length < 1) return;
+            pages[pageIndex].gridWidget.releaseButton(x, y, shift);
         }));
     }
 
@@ -336,7 +347,6 @@ class APCKey25Controller implements grig.controller.Controller
     {
         this.host = host;
 
-        host.showMessage('startup() called');
         setupTriggers();
         host.getTransport().handle((outcome) -> {
             switch outcome {
@@ -350,10 +360,10 @@ class APCKey25Controller implements grig.controller.Controller
                     setupClipView(clipView);
                     setupTrackView(clipView.getTrackView());
                 case Failure(error):
-                    host.createTrackView(WIDTH, HEIGHT, 1).handle((trackOutcome) -> {
+                    host.createTrackView(WIDTH).handle((trackOutcome) -> {
                         switch trackOutcome {
                             case Success(trackView): setupTrackView(trackView);
-                            case Failure(trackError): host.logMessage('ClipView and TrackView not available:\n\t$error\n\t$trackOutcome');
+                            case Failure(trackError): host.logMessage('ClipView and TrackView not available:\n\t$error\n\t$trackError');
                         }
                     });
             }
@@ -379,7 +389,7 @@ class APCKey25Controller implements grig.controller.Controller
         });
         host.getHostMidiOut('', 0, 1).handle((outcome) -> {
             switch outcome {
-                case Success(hostMidiOut): host.logMessage('Initiated midi output');
+                case Success(hostMidiOut): setupVirtualKeyboard(hostMidiOut);
                 case Failure(error): host.logMessage('Host midi out unavailable: ${error.message}');
             }
         });
@@ -391,7 +401,6 @@ class APCKey25Controller implements grig.controller.Controller
 
     public function shutdown()
     {
-        host.showMessage('shutdown() called');
     }
 
     private function displayArrows():Void
@@ -406,7 +415,7 @@ class APCKey25Controller implements grig.controller.Controller
     private function displayGrid():Void
     {
         if (pages.length == 0) return;
-        pages[pageIndex].gridDisplay.display(midiScreen);
+        pages[pageIndex].gridWidget.midiDisplay.display(midiScreen);
     }
 
     private function displayTrackCtrlDisplays()

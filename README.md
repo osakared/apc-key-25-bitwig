@@ -16,7 +16,6 @@ The old javascript-based Bitwig controller script is still here for anyone who w
 * Shift + "Stop All Clips" returns to arrangement.
 * Shift + Play/Pause does tap tempo.
 * Shift + Record stops.
-* Shift + knob does fine-tuning mode. (hmmm...)
 * In mute mode, the light indicates that the track _is_ muted.
 * Repeatedly pressing Shift + Send cycles through sends
 * Repeatedly pressing Shift + Device cycles through device pages
@@ -29,6 +28,11 @@ Copy APCKey25.bwextension into your local extensions directory:
 * `~/Documents/Bitwig\ Studio/Extensions/` in macos
 * `~/Bitwig Studio/Extensions/` in linux
 * `%userprofile%\Documents\Bitwig Studio\Extensions\` in windows
+
+Development
+-----------
+
+[![Gitter](https://badges.gitter.im/haxe-grig/Lobby.svg)](https://gitter.im/haxe-grig/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 License
 -------
