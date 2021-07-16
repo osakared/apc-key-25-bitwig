@@ -32,6 +32,8 @@ Development
 
 [![Gitter](https://badges.gitter.im/haxe-grig/Lobby.svg)](https://gitter.im/haxe-grig/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+There are some extra steps needed to build right now. I'm working on making it super simple. Use the above gitter link to join the channel for the grig project, which grig.controller is a part of and this is the initial script based thereof.
+
 License
 -------
 
