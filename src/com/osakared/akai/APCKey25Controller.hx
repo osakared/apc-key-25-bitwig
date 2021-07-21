@@ -1,5 +1,6 @@
 package com.osakared.akai;
 
+import grig.controller.Movable;
 import grig.midi.MidiSender;
 import grig.controller.Host;
 import grig.midi.MidiMessage;
@@ -98,10 +99,6 @@ class APCKey25Controller implements grig.controller.Controller
 
     public function new()
     {
-        gridNotes = new Array<Array<Int>>();
-        for (i in 0...HEIGHT) {
-            gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
-        }
     }
 
     private function onMidi(message:MidiMessage, delta:Float):Void
@@ -132,11 +129,9 @@ class APCKey25Controller implements grig.controller.Controller
         else TrackButtonMode.Off;
     }
 
-    private function setupClipView(clipView:grig.controller.ClipView)
+    static private function connectMovableToArrows(movable:Movable, arrowDisplay:MidiDisplay):Void
     {
-        // Callbacks for arrow displays
-        var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
-        clipView.addCanMoveChangedCallback((direction:grig.controller.Direction, canMove:Bool) -> {
+        movable.addCanMoveChangedCallback((direction:grig.controller.Direction, canMove:Bool) -> {
             var mode = switch direction {
                 case Up: ArrowMode.Up;
                 case Down: ArrowMode.Down;
@@ -145,6 +140,13 @@ class APCKey25Controller implements grig.controller.Controller
             }
             arrowDisplay.set(0, mode, trackButtonModeOn(canMove));
         });
+    }
+
+    private function setupClipView(clipView:grig.controller.ClipView)
+    {
+        // Callbacks for arrow displays
+        var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
+        connectMovableToArrows(clipView, arrowDisplay);
 
         // Triggers for scene launchers
         midiTriggerList.push(new MultiNoteTrigger(SCENE_BUTTONS[0], (idx:Int, _:Int) -> {
@@ -243,10 +245,11 @@ class APCKey25Controller implements grig.controller.Controller
     private function setupVirtualKeyboard(hostMidiOut:MidiSender):Void
     {
         var matrixKeyboardDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
-        var matrixKeyboard = new MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, WIDTH, HEIGHT);
+        var matrixKeyboard = new MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, WIDTH + 5, HEIGHT * 2);
         matrixKeyboard.display();
 
         var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
+        connectMovableToArrows(matrixKeyboard, arrowDisplay);
         pages.push({arrowDisplay: arrowDisplay, gridWidget: matrixKeyboard});
     }
 
@@ -346,6 +349,11 @@ class APCKey25Controller implements grig.controller.Controller
     public function startup(host:Host)
     {
         this.host = host;
+
+        gridNotes = new Array<Array<Int>>();
+        for (i in 0...HEIGHT) {
+            gridNotes.push([for (j in 0...WIDTH) (HEIGHT - i - 1) * 8 + j]);
+        }
 
         setupTriggers();
         host.getTransport().handle((outcome) -> {
