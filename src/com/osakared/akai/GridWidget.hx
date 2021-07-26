@@ -16,7 +16,7 @@ interface GridWidget extends grig.controller.Movable
      * @param y 
      * @param fnBtn 
      */
-    public function pressButton(x:Int, y:Int, fnBtn:Bool):Void;
+    public function pressButton(row:Int, column:Int, fnBtn:Bool):Void;
 
     /**
      * Triggered when button at position x,y is depressed
@@ -24,5 +24,5 @@ interface GridWidget extends grig.controller.Movable
      * @param y 
      * @param fbBtn 
      */
-    public function releaseButton(x:Int, y:Int, fbBtn:Bool):Void;
+    public function releaseButton(row:Int, column:Int, fbBtn:Bool):Void;
 }

@@ -16,7 +16,7 @@ typedef MatrixKey = {
     // How it is displayed
     var state:Int;
     // What note is played when this is pressed
-    var note:Int;
+    var note:Pitch;
 }
 
 /**
@@ -28,17 +28,21 @@ class MatrixKeyboard implements GridWidget
     private var displayTable:MidiDisplayTable;
     private var matrix:Array<Array<MatrixKey>>;
     private var midiOut:MidiSender;
-    private var locationX:Int = 0;
-    private var locationY:Int = 0;
+    private var startPitch:Pitch;
+    private var currentCol:Int = 0;
+    private var currentRow:Int = 0;
     private var previousCanMoveStates = new Map<Direction, Bool>();
     private var callbacks = new Array<CanMoveChangedCallback>();
 
-    public function new(midiDisplay:MidiDisplay, displayTable:MidiDisplayTable, midiOut:MidiSender, width:Int, height:Int)
+    public function new(midiDisplay:MidiDisplay, displayTable:MidiDisplayTable, midiOut:MidiSender, startPitch:Pitch, width:Int, height:Int, currentCol:Int = 0, currentRow:Int = 0)
     {
         this.midiDisplay = midiDisplay;
         this.displayTable = displayTable;
         this.midiOut = midiOut;
+        this.startPitch = startPitch;
         matrix = new Array<Array<MatrixKey>>();
+        this.currentCol = currentCol;
+        this.currentRow = currentRow;
         initializeMatrix(width, height);
         for (i in Direction.createAll()) {
             previousCanMoveStates[i] = canMove(i);
@@ -53,7 +57,7 @@ class MatrixKeyboard implements GridWidget
 
     private function initializeMatrix(width:Int, height:Int):Void
     {
-        var rowPitch = grig.pitch.Pitch.fromNote(PitchClass.Db, 5);
+        var rowPitch = startPitch;
         for (i in 0...height) {
             var row = new Array<MatrixKey>();
             var currentPitch:Pitch = rowPitch;
@@ -63,7 +67,7 @@ class MatrixKeyboard implements GridWidget
                 } else if (currentPitch.note.isWhiteKey()) {
                     displayTable.defaultOnState;
                 } else displayTable.altOnState;
-                row.push({state: state, note: currentPitch.toMidiNote()});
+                row.push({state: state, note: currentPitch});
                 currentPitch += 1;
             }
             matrix.push(row);
@@ -74,11 +78,11 @@ class MatrixKeyboard implements GridWidget
     public function display():Void
     {
         if (matrix.length == 0) return;
-        var width = Ints.min(matrix[0].length - locationY, midiDisplay.width);
-        var height = Ints.min(matrix.length - locationX, midiDisplay.height);
-        for (i in 0...height) {
-            for (j in 0...width) {
-                midiDisplay.set(i, j, matrix[i+locationY][j+locationX].state);
+        var width = Ints.min(matrix[0].length - currentCol, midiDisplay.width);
+        var height = Ints.min(matrix.length - currentRow, midiDisplay.height);
+        for (row in 0...height) {
+            for (col in 0...width) {
+                midiDisplay.set(row, col, matrix[row+currentRow][col+currentCol].state);
             }
         }
     }
@@ -87,10 +91,10 @@ class MatrixKeyboard implements GridWidget
     {
         if (matrix.length == 0) return false;
         return switch direction {
-            case Up: locationY > 0;
-            case Down: locationY + midiDisplay.width < matrix[0].length;
-            case Left: locationX > 0;
-            case Right: locationX + midiDisplay.height < matrix.length;
+            case Up: currentRow > 0;
+            case Down: currentRow + midiDisplay.height < matrix.length;
+            case Left: currentCol > 0;
+            case Right: currentCol + midiDisplay.width < matrix[0].length;
         }
     }
 
@@ -109,10 +113,10 @@ class MatrixKeyboard implements GridWidget
     {
         if (!canMove(direction)) return;
         switch direction {
-            case Up: locationY -= 1;
-            case Down: locationY += 1;
-            case Left: locationX -= 1;
-            case Right: locationX += 1;
+            case Up: currentRow -= 1;
+            case Down: currentRow += 1;
+            case Left: currentCol -= 1;
+            case Right: currentCol += 1;
         }
         updateCanMoveState(direction);
         updateCanMoveState(direction.opposite());
@@ -127,13 +131,15 @@ class MatrixKeyboard implements GridWidget
         callbacks.push(callback);
     }
 
-    public function pressButton(x:Int, y:Int, fnBtn:Bool):Void
+    public function pressButton(row:Int, col:Int, fnBtn:Bool):Void
     {
-        midiOut.sendMessage(MidiMessage.ofMessageType(MessageType.NoteOn, [matrix[x+locationY][y+locationX].note, 64]));
+        var pitch = matrix[row+currentRow][col+currentCol].note;
+        if (pitch.isValidMidiNote()) midiOut.sendMessage(MidiMessage.ofMessageType(MessageType.NoteOn, [pitch.toMidiNote(), 64]));
     }
 
-    public function releaseButton(x:Int, y:Int, fbBtn:Bool):Void
+    public function releaseButton(row:Int, col:Int, fbBtn:Bool):Void
     {
-        midiOut.sendMessage(MidiMessage.ofMessageType(MessageType.NoteOff, [matrix[x+locationY][y+locationX].note, 0]));
+        var pitch = matrix[row+currentRow][col+currentCol].note;
+        if (pitch.isValidMidiNote()) midiOut.sendMessage(MidiMessage.ofMessageType(MessageType.NoteOff, [pitch.toMidiNote(), 0]));
     }
 }

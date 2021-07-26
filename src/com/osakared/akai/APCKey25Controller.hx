@@ -245,7 +245,8 @@ class APCKey25Controller implements grig.controller.Controller
     private function setupVirtualKeyboard(hostMidiOut:MidiSender):Void
     {
         var matrixKeyboardDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
-        var matrixKeyboard = new MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, WIDTH + 5, HEIGHT * 2);
+        var startPitch = grig.pitch.Pitch.fromNote(grig.pitch.PitchClass.D, 7);
+        var matrixKeyboard = new MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, startPitch, WIDTH + 5, HEIGHT * 3, 0, HEIGHT);
         matrixKeyboard.display();
 
         var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);

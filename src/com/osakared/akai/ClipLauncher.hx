@@ -31,13 +31,13 @@ class ClipLauncher implements GridWidget
         return 'Clip Launcher';
     }
 
-    public function pressButton(x:Int, y:Int, fnBtn:Bool):Void
+    public function pressButton(row:Int, column:Int, fnBtn:Bool):Void
     {
-        if (fnBtn) clipView.recordClip(y, x); // let's make this configurable!
-        else clipView.playClip(y, x);
+        if (fnBtn) clipView.recordClip(column, row); // let's make this configurable!
+        else clipView.playClip(column, row);
     }
 
-    public function releaseButton(x:Int, y:Int, fbBtn:Bool):Void
+    public function releaseButton(row:Int, column:Int, fbBtn:Bool):Void
     {
     }
 
