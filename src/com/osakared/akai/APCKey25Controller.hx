@@ -1,9 +1,10 @@
 package com.osakared.akai;
 
-import grig.controller.Movable;
-import grig.midi.MidiSender;
+import grig.controller.display.MidiDisplay;
 import grig.controller.Host;
+import grig.controller.Movable;
 import grig.midi.MidiMessage;
+import grig.midi.MidiSender;
 
 @name("APC Key 25")
 @author("pinkboi")
@@ -26,7 +27,7 @@ class APCKey25Controller implements grig.controller.Controller
                                          ButtonNotes.Volume, ButtonNotes.Pan, ButtonNotes.Send, ButtonNotes.Device]];
 
     private var gridNotes:Array<Array<Int>>;
-    private var gridDisplayTable:MidiDisplayTable = {
+    private var gridDisplayTable:grig.controller.display.MidiDisplayTable = {
         defaultOnState: GridButtonMode.Green,
         altOnState: GridButtonMode.Amber,
         offState: GridButtonMode.Off,
@@ -39,7 +40,7 @@ class APCKey25Controller implements grig.controller.Controller
     };
 
     private var host:Host;
-    private var pages = new Array<{arrowDisplay:MidiDisplay, gridWidget:GridWidget}>();
+    private var pages = new Array<{arrowDisplay:MidiDisplay, gridWidget:grig.controller.display.GridWidget}>();
     private var pageIndex:Int = 0;
 
     private var shift:Bool = false;
@@ -54,7 +55,7 @@ class APCKey25Controller implements grig.controller.Controller
     private var offMidiTriggerList = new MidiTriggerList();
     private var ctrlMidiTriggerList = new MidiTriggerList();
 
-    private var midiScreen = new MidiScreen();
+    private var midiScreen = new grig.controller.display.MidiScreen();
     private var emptyArrowDisplay:MidiDisplay = null;
     private var knobCtrlDisplay:MidiDisplay = null;
     private var trackModeDisplay:MidiDisplay = null;
@@ -154,7 +155,7 @@ class APCKey25Controller implements grig.controller.Controller
         }));
 
         var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
-        var clipLauncher = new ClipLauncher(gridDisplay, gridDisplayTable, clipView);
+        var clipLauncher = new grig.controller.display.ClipLauncher(gridDisplay, gridDisplayTable, clipView);
 
         clipView.addSceneUpdateCallback((track:Int, state:grig.controller.SceneState) -> {
             var mode = switch state {
@@ -246,7 +247,7 @@ class APCKey25Controller implements grig.controller.Controller
     {
         var matrixKeyboardDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
         var startPitch = grig.pitch.Pitch.fromNote(grig.pitch.PitchClass.D, 7);
-        var matrixKeyboard = new MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, startPitch, WIDTH + 5, HEIGHT * 3, 0, HEIGHT);
+        var matrixKeyboard = new grig.controller.display.MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, startPitch, WIDTH + 5, HEIGHT * 3, 0, HEIGHT);
         matrixKeyboard.display();
 
         var arrowDisplay = new MidiDisplay(ARROW_BUTTONS, TrackButtonMode.Off, 0);
