@@ -2,6 +2,10 @@ package com.osakared.akai;
 
 import grig.controller.display.MidiDisplay;
 import grig.controller.Host;
+import grig.controller.input.GridNoteTrigger;
+import grig.controller.input.MidiTriggerList;
+import grig.controller.input.MultiNoteTrigger;
+import grig.controller.input.SingleNoteTrigger;
 import grig.controller.Movable;
 import grig.midi.MidiMessage;
 import grig.midi.MidiSender;

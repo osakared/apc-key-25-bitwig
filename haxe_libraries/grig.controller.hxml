@@ -1,4 +1,4 @@
-# @install: lix --silent download "https://gitlab.com/api/v4/projects/haxe-grig%2Fgrig.controller/repository/archive.zip?sha=dd9eea3c2daacead3706a89d767c98ceacb9fdff&" into grig.controller/0.0.1/gitlab/dd9eea3c2daacead3706a89d767c98ceacb9fdff
+# @install: lix --silent download "https://gitlab.com/api/v4/projects/haxe-grig%2Fgrig.controller/repository/archive.zip?sha=fb38fe7d0d2dc7d9e0bdcd27852e0b95ac99cd4f&" into grig.controller/0.0.1/gitlab/fb38fe7d0d2dc7d9e0bdcd27852e0b95ac99cd4f
 -lib grig.midi
--cp ${HAXE_LIBCACHE}/grig.controller/0.0.1/gitlab/dd9eea3c2daacead3706a89d767c98ceacb9fdff/src
+-cp ${HAXE_LIBCACHE}/grig.controller/0.0.1/gitlab/fb38fe7d0d2dc7d9e0bdcd27852e0b95ac99cd4f/src
 -D grig.controller=0.0.1
