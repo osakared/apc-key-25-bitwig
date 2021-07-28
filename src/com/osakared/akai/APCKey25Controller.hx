@@ -10,6 +10,8 @@ import grig.controller.Movable;
 import grig.midi.MidiMessage;
 import grig.midi.MidiSender;
 
+typedef KeyAssignSetting = grig.controller.EnumSetting<KeyAssignMode>;
+
 @name("APC Key 25")
 @author("pinkboi")
 @version("1.3")
@@ -65,8 +67,13 @@ class APCKey25Controller implements grig.controller.Controller
     private var trackModeDisplay:MidiDisplay = null;
     private var sceneLaunchDisplay:MidiDisplay = null;
 
+    // Settings
+    private var shiftRecAssign:KeyAssignSetting;
+    private var shiftPlayAssign:KeyAssignSetting;
+
     // Stuff we can't rely on being filled since it comes from promises
     private var sends = new Array<grig.controller.SendView>();
+    private var device:grig.controller.DeviceView = null;
     private var parameterView:grig.controller.ParameterView = null;
     private var midiOut:grig.midi.MidiSender = null;
 
@@ -340,21 +347,46 @@ class APCKey25Controller implements grig.controller.Controller
         trackModeDisplay = new MidiDisplay(SCENE_BUTTONS, SceneButtonMode.Off, 0);
     }
 
+    private function runCustomTransportButton(transport:grig.controller.Transport, mode:KeyAssignMode):Void
+    {
+        switch (mode) {
+            case TapTempo: transport.tapTempo();
+            case Stop: transport.stop();
+            case CycleDevices:
+                if (device != null) device.cycle();
+        }
+    }
+
     private function setupTransport(transport:grig.controller.Transport)
     {
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, (_:Int) -> {
-            if (shift) transport.tapTempo();
+            if (shift) {
+                runCustomTransportButton(transport, shiftPlayAssign.get());
+            }
             else transport.play();
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, (_:Int) -> {
-            if (shift) transport.stop();
+            if (shift) {
+                runCustomTransportButton(transport, shiftRecAssign.get());
+            }
             else transport.record();
         }));
+    }
+
+    public function initSettings(settings:grig.controller.Settings)
+    {
+        var buttonAssignments = 'Button Assignments';
+        shiftRecAssign = settings.createEnumSetting('shift+record assign', buttonAssignments, KeyAssignMode, Stop);
+        shiftPlayAssign = settings.createEnumSetting('shift+play assign', buttonAssignments, KeyAssignMode, TapTempo);
     }
 
     public function startup(host:Host)
     {
         this.host = host;
+
+        // Initiate settings first
+        var settings = host.createControllerSettings();
+        initSettings(settings);
 
         gridNotes = new Array<Array<Int>>();
         for (i in 0...HEIGHT) {
@@ -382,11 +414,16 @@ class APCKey25Controller implements grig.controller.Controller
                     });
             }
         });
-        host.createParameterView(WIDTH).handle((outcome) -> {
+        host.createDeviceView().handle((outcome) -> {
             switch outcome {
-                case Success(parameterView):
-                    this.parameterView = parameterView;
-                case Failure(error): host.logMessage('Parameter view unavailable: ${error.message}');
+                case Success(device):
+                    this.device = device;
+                    switch device.createParameterView(WIDTH) {
+                        case Success(parameterView):
+                            this.parameterView = parameterView;
+                        case Failure(error): host.logMessage('Parameter view unavailable: ${error.message}');
+                    }
+                case Failure(error): host.logMessage('Device view unavailable: ${error.message}');
             }
         });
         host.getMidiIn(0).handle((outcome) -> {
