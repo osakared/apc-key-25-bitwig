@@ -1,5 +1,6 @@
 package com.osakared.akai;
 
+import grig.controller.display.ClipLauncher;
 import grig.controller.display.MidiDisplay;
 import grig.controller.Host;
 import grig.controller.input.GridNoteTrigger;
@@ -9,8 +10,6 @@ import grig.controller.input.SingleNoteTrigger;
 import grig.controller.Movable;
 import grig.midi.MidiMessage;
 import grig.midi.MidiSender;
-
-typedef KeyAssignSetting = grig.controller.EnumSetting<KeyAssignMode>;
 
 @name("APC Key 25")
 @author("pinkboi")
@@ -68,14 +67,15 @@ class APCKey25Controller implements grig.controller.Controller
     private var sceneLaunchDisplay:MidiDisplay = null;
 
     // Settings
-    private var shiftRecAssign:KeyAssignSetting;
-    private var shiftPlayAssign:KeyAssignSetting;
+    private var shiftRecAssign:KeyAssignMode;
+    private var shiftPlayAssign:KeyAssignMode;
 
     // Stuff we can't rely on being filled since it comes from promises
     private var sends = new Array<grig.controller.SendView>();
     private var device:grig.controller.DeviceView = null;
     private var parameterView:grig.controller.ParameterView = null;
     private var midiOut:grig.midi.MidiSender = null;
+    private var clipLauncher:ClipLauncher = null;
 
     private function get_knobMode():KnobMode
     {
@@ -166,7 +166,7 @@ class APCKey25Controller implements grig.controller.Controller
         }));
 
         var gridDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
-        var clipLauncher = new grig.controller.display.ClipLauncher(gridDisplay, gridDisplayTable, clipView);
+        clipLauncher = new ClipLauncher(gridDisplay, gridDisplayTable, clipView);
 
         clipView.addSceneUpdateCallback((track:Int, state:grig.controller.SceneState) -> {
             var mode = switch state {
@@ -361,13 +361,13 @@ class APCKey25Controller implements grig.controller.Controller
     {
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.PlayPause, (_:Int) -> {
             if (shift) {
-                runCustomTransportButton(transport, shiftPlayAssign.get());
+                runCustomTransportButton(transport, shiftPlayAssign);
             }
             else transport.play();
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Record, (_:Int) -> {
             if (shift) {
-                runCustomTransportButton(transport, shiftRecAssign.get());
+                runCustomTransportButton(transport, shiftRecAssign);
             }
             else transport.record();
         }));
@@ -376,8 +376,15 @@ class APCKey25Controller implements grig.controller.Controller
     public function initSettings(settings:grig.controller.Settings)
     {
         var buttonAssignments = 'Button Assignments';
-        shiftRecAssign = settings.createEnumSetting('shift+record assign', buttonAssignments, KeyAssignMode, Stop);
-        shiftPlayAssign = settings.createEnumSetting('shift+play assign', buttonAssignments, KeyAssignMode, TapTempo);
+        settings.createEnumSetting('shift+record assign', buttonAssignments, KeyAssignMode, Stop).addValueCallback((value:KeyAssignMode) -> {
+            shiftRecAssign = value;
+        });
+        settings.createEnumSetting('shift+play assign', buttonAssignments, KeyAssignMode, TapTempo).addValueCallback((value:KeyAssignMode) -> {
+            shiftPlayAssign = value;
+        });
+        settings.createEnumSetting('shift+launcher assign', buttonAssignments, ShiftLauncherConfig, Select).addValueCallback((value:ShiftLauncherConfig) -> {
+            if (clipLauncher != null) clipLauncher.setShiftLauncherConfig(value);
+        });
     }
 
     public function startup(host:Host)
@@ -385,8 +392,12 @@ class APCKey25Controller implements grig.controller.Controller
         this.host = host;
 
         // Initiate settings first
-        var settings = host.createControllerSettings();
-        initSettings(settings);
+        host.createControllerSettings().handle((outcome) -> {
+            switch outcome {
+                case Success(settings): initSettings(settings);
+                case Failure(error): host.logMessage('Settings unavailable: ${error.message}');
+            }
+        });
 
         gridNotes = new Array<Array<Int>>();
         for (i in 0...HEIGHT) {
