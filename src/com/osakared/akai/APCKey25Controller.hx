@@ -67,14 +67,17 @@ class APCKey25Controller implements grig.controller.Controller
     private var sceneLaunchDisplay:MidiDisplay = null;
 
     // Settings
-    private var shiftRecAssign:KeyAssignMode;
-    private var shiftPlayAssign:KeyAssignMode;
+    private var shiftRecAssign:KeyAssignMode = Stop;
+    private var shiftPlayAssign:KeyAssignMode = TapTempo;
+    private var velocityCurveType:VelocityCurveType = Default;
+    private var constantVelocity:Int = 64;
 
     // Stuff we can't rely on being filled since it comes from promises
     private var sends = new Array<grig.controller.SendView>();
     private var device:grig.controller.DeviceView = null;
     private var parameterView:grig.controller.ParameterView = null;
     private var midiOut:grig.midi.MidiSender = null;
+    private var hostMidiOut:grig.controller.HostMidiOut = null;
     private var clipLauncher:ClipLauncher = null;
 
     private function get_knobMode():KnobMode
@@ -254,8 +257,10 @@ class APCKey25Controller implements grig.controller.Controller
     }
 
 
-    private function setupVirtualKeyboard(hostMidiOut:MidiSender):Void
+    private function setupVirtualKeyboard(hostMidiOut:grig.controller.HostMidiOut):Void
     {
+        this.hostMidiOut = hostMidiOut;
+        resetVelocityCurve();
         var matrixKeyboardDisplay = new MidiDisplay(gridNotes, GridButtonMode.Off, 0);
         var startPitch = grig.pitch.Pitch.fromNote(grig.pitch.PitchClass.D, 7);
         var matrixKeyboard = new grig.controller.display.MatrixKeyboard(matrixKeyboardDisplay, gridDisplayTable, hostMidiOut, startPitch, WIDTH + 5, HEIGHT * 3, 0, HEIGHT);
@@ -373,6 +378,12 @@ class APCKey25Controller implements grig.controller.Controller
         }));
     }
 
+    private function resetVelocityCurve():Void
+    {
+        if (hostMidiOut == null) return;
+        hostMidiOut.setVelocityCurve(VelocityCurveGenerator.generateVelocityCurve(velocityCurveType, constantVelocity));
+    }
+
     public function initSettings(settings:grig.controller.Settings)
     {
         var buttonAssignments = 'Button Assignments';
@@ -384,6 +395,15 @@ class APCKey25Controller implements grig.controller.Controller
         });
         settings.createEnumSetting('shift+launcher assign', buttonAssignments, ShiftLauncherConfig, Select).addValueCallback((value:ShiftLauncherConfig) -> {
             if (clipLauncher != null) clipLauncher.setShiftLauncherConfig(value);
+        });
+        var velocityCurveSettings = 'Velocity Curve Settings';
+        settings.createEnumSetting('velocity curve type', velocityCurveSettings, VelocityCurveType, Default).addValueCallback((value:VelocityCurveType) -> {
+            velocityCurveType = value;
+            resetVelocityCurve();
+        });
+        settings.createIntSetting('flat velocity curve amount', velocityCurveSettings, 0, 127, 1, 'velocity', 64).addValueCallback((value:Int) -> {
+            constantVelocity = value;
+            resetVelocityCurve();
         });
     }
 
