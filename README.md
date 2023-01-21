@@ -34,6 +34,14 @@ Development
 
 There are some extra steps needed to build right now. I'm working on making it super simple. Use the above gitter link to join the channel for the grig project, which grig.controller is a part of and this is the initial script based thereof.
 
+## Bitwig
+
+Have maven installed, then run:
+
+`mvn dependency:get -DrepoUrl=https://maven.bitwig.com -Dartifact=com.bitwig:extension-api:17`
+
+This will install the Bitwig controller api into your local maven repo, which the included bitwig-maven.hxml will hopefully point to.
+
 License
 -------
 
