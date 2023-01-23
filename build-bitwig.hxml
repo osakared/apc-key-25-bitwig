@@ -1,0 +1,12 @@
+build.hxml
+# -D GRIG_CONTROLLER_BITWIG
+# --jvm bin/APCKey25.jar
+# maven-bitwig.hxml
+# --cmd jar uf bin/APCKey25.jar -C bin META-INF
+# --cmd mv bin/APCKey25.jar bin/APCKey25.bwextension
+
+-D GRIG_CONTROLLER_BITWIG
+--jvm bin/APCKey25Mk2.jar
+maven-bitwig.hxml
+--cmd jar uf bin/APCKey25Mk2.jar -C bin META-INF
+--cmd mv bin/APCKey25Mk2.jar bin/APCKey25Mk2.bwextension
