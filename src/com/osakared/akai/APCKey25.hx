@@ -94,7 +94,7 @@ class APCKey25
             return this._knobMode;
         }
         this._knobMode = _knobMode;
-        knobCtrlDisplay.setExclusive(0, _knobMode, TrackButtonMode.Red);
+        knobCtrlDisplay.setExclusive(0, _knobMode, TrackButtonMode.Red, 0);
         return this._knobMode;
     }
 
@@ -106,7 +106,7 @@ class APCKey25
     private function set_trackMode(_trackMode:TrackMode):TrackMode
     {
         this._trackMode = _trackMode;
-        trackModeDisplay.setExclusive(0, _trackMode, SceneButtonMode.Green);
+        trackModeDisplay.setExclusive(0, _trackMode, SceneButtonMode.Green, 0);
         return this._trackMode;
     }
 
@@ -153,7 +153,7 @@ class APCKey25
                 case Left: ArrowMode.Left;
                 case Right: ArrowMode.Right;
             }
-            arrowDisplay.set(0, mode, trackButtonModeOn(canMove));
+            arrowDisplay.set(0, mode, trackButtonModeOn(canMove), 0);
         });
     }
 
