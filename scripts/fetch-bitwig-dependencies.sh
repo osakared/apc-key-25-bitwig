@@ -1,1 +1,1 @@
-mvn dependency:get -DrepoUrl=https://maven.bitwig.com -Dartifact=com.bitwig:extension-api:17
+mvn dependency:get -DremoteRepositories=https://maven.bitwig.com -Dartifact=com.bitwig:extension-api:25

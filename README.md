@@ -41,7 +41,7 @@ Have maven installed, then run:
 
 `./scripts/fetch-bitwig-dependencies.sh`
 
-This will install the Bitwig controller api into your local maven repo, which the included `bitwig-maven.hxml` should point to. Then run `haxe build-bitwig.hxml` to build the extension, which will be found at `bin/APCKey25.bwextension`.
+This will install the Bitwig controller api into your local maven repo, which the included `maven-bitwig.hxml` should point to. Then run `haxe build-bitwig.hxml` to build the extension, which will be found at `bin/APCKey25.bwextension`.
 
 License
 -------

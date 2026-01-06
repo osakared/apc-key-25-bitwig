@@ -178,7 +178,7 @@ class APCKey25
                 case StopQueued: SceneButtonMode.Green;
                 case Stopped: SceneButtonMode.Off;
             }
-            sceneLaunchDisplay.set(0, track, mode);
+            sceneLaunchDisplay.set(0, track, mode, 0);
         });
 
         pages.push({arrowDisplay: arrowDisplay, gridWidget: clipLauncher});
@@ -201,23 +201,23 @@ class APCKey25
                 case StopQueued: TrackButtonMode.BlinkingRed;
                 case Stopped: TrackButtonMode.Red;
             }
-            trackCtrlDisplays[TrackMode.ClipStop].set(0, track, mode);
+            trackCtrlDisplays[TrackMode.ClipStop].set(0, track, mode, 0);
         });
 
         trackView.addIsSoloedCallback((track:Int, soloed:Bool) -> {
-            trackCtrlDisplays[TrackMode.Solo].set(0, track, soloed ? TrackButtonMode.Red : TrackButtonMode.Off);
+            trackCtrlDisplays[TrackMode.Solo].set(0, track, soloed ? TrackButtonMode.Red : TrackButtonMode.Off, 0);
         });
 
         trackView.addIsArmedCallback((track:Int, isArmed:Bool) -> {
-            trackCtrlDisplays[TrackMode.RecArm].set(0, track, isArmed ? TrackButtonMode.Red : TrackButtonMode.Off);
+            trackCtrlDisplays[TrackMode.RecArm].set(0, track, isArmed ? TrackButtonMode.Red : TrackButtonMode.Off, 0);
         });
 
         trackView.addIsMutedCallback((track:Int, muted:Bool) -> {
-            trackCtrlDisplays[TrackMode.Mute].set(0, track, muted ? TrackButtonMode.Red : TrackButtonMode.Off);
+            trackCtrlDisplays[TrackMode.Mute].set(0, track, muted ? TrackButtonMode.Red : TrackButtonMode.Off, 0);
         });
 
         trackView.addSelectTrackUpdateCallback((track:Int) -> {
-            trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red);
+            trackCtrlDisplays[TrackMode.Select].setExclusive(0, track, TrackButtonMode.Red, 0);
         });
 
         midiTriggerList.push(new MultiNoteTrigger(TRACK_BUTTONS[0], (idx:Int, _:Int) -> {
@@ -523,7 +523,7 @@ class APCKey25
     private function displayTrackCtrlDisplays()
     {
         if (trackCtrlDisplays.length == 0) {
-            knobCtrlDisplay.displayClear(midiScreen);
+            knobCtrlDisplay.display(midiScreen);
             emptyArrowDisplay.display(midiScreen);
         }
         trackCtrlDisplays[trackMode].display(midiScreen);
