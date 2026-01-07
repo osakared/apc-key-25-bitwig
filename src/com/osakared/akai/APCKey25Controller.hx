@@ -4,7 +4,7 @@ import grig.controller.Host;
 
 @name("APC Key 25")
 @author("pinkboi")
-@version("1.4")
+@version("1.5")
 @uuid("65176610-873b-11e4-b4a9-0800200c9a66")
 @hardwareVendor("Akai")
 @hardwareModel("APC Key 25")

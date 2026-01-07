@@ -1,4 +1,4 @@
-# @install: lix --silent download "git:https://codeberg.org/grig/grig.controller.git#56d209170a13ea490846219dac92d169822203b0" into grig.controller/0.0.1/git/56d209170a13ea490846219dac92d169822203b0
+# @install: lix --silent download "git:https://codeberg.org/grig/grig.controller.git#533117dc6403fa94074f79253cf532a573bc37a6" into grig.controller/0.0.1/git/533117dc6403fa94074f79253cf532a573bc37a6
 -lib grig.midi
--cp ${HAXE_LIBCACHE}/grig.controller/0.0.1/git/56d209170a13ea490846219dac92d169822203b0/src
+-cp ${HAXE_LIBCACHE}/grig.controller/0.0.1/git/533117dc6403fa94074f79253cf532a573bc37a6/src
 -D grig.controller=0.0.1

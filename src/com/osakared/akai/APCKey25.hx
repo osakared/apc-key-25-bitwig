@@ -121,18 +121,29 @@ class APCKey25
         this.variant = variant;
     }
 
+    private function onShiftKeyboardMidi(message:MidiMessage, delta:Float):Void
+    {
+        if (shift && message.messageType == ControlChange && message.controlChangeType == Sustain && message.byte3 == 0x7f) {
+            if (pages.length < 2) return;
+            pageIndex++;
+            if (pageIndex >= pages.length) pageIndex = 0;
+            host.showMessage('Page: ${pages[pageIndex].gridWidget.getTitle()}');
+        }
+        // Here, we'll add cool features, using shift+key to set key/mode for an auto-chord widget
+    }
+
+    private function onKeyboardMidi(message:MidiMessage, delta:Float):Void
+    {
+        if (shift) onShiftKeyboardMidi(message, delta);
+        else hostMidiOut.sendMessage(message);
+    }
+
     private function onMidi(message:MidiMessage, delta:Float):Void
     {
-        host.logMessage(message.toString());
         // We generally ignore notes on channel 1 as those are just for sending direct to the DAW
         if (message.channel == 1) {
-            // ...unless it's sustain and shift is already present, in which case, custom page time!
-            if (shift && message.messageType == ControlChange && message.controlChangeType == Sustain && message.byte3 == 0x7f) {
-                if (pages.length < 2) return;
-                pageIndex++;
-                if (pageIndex >= pages.length) pageIndex = 0;
-                host.showMessage('Page: ${pages[pageIndex].gridWidget.getTitle()}');
-            } 
+            // ...unless shift is already present, in which case, custom page time!
+            if (shift) onShiftKeyboardMidi(message, delta);
             return;
         }
         if (message.messageType == NoteOn) {
@@ -496,6 +507,14 @@ class APCKey25
                 case Failure(error): host.logMessage('Midi in unavailable: ${error.message}');
             }
         });
+        if (variant == Mk2) {
+            host.getMidiIn(1).handle((outcome) -> {
+                switch outcome {
+                    case Success(midiIn): midiIn.setCallback(onKeyboardMidi);
+                    case Failure(error): host.logMessage('Midi in unavailable: ${error.message}');
+                }
+            });
+        }
         host.getMidiOut(0).handle((outcome) -> {
             switch outcome {
                 case Success(_midiOut): midiOut = _midiOut;
