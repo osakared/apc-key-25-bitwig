@@ -106,7 +106,13 @@ class APCKey25
     private function set_trackMode(_trackMode:TrackMode):TrackMode
     {
         this._trackMode = _trackMode;
-        trackModeDisplay.setExclusive(0, _trackMode, SceneButtonMode.Green, 0);
+        var modeIdx = switch variant {
+            case Mk1: _trackMode;
+            case Mk2: if (_trackMode == TrackMode.RecArm) TrackMode.Mute;
+                else if (_trackMode == TrackMode.Mute) TrackMode.RecArm;
+                else _trackMode;
+        }
+        trackModeDisplay.setExclusive(0, modeIdx, SceneButtonMode.Green, 0);
         return this._trackMode;
     }
 
@@ -243,31 +249,32 @@ class APCKey25
         }
 
         var knobCCs = [for (i in 0...WIDTH) i + LOWEST_CC];
-        if (variant == Mk1) {
-            ctrlMidiTriggerList.push(new MultiNoteTrigger(knobCCs, (idx:Int, value:Int) -> {
-                var valueF:Float = value / 127;
-                switch knobMode {
-                    case Volume: trackView.setVolume(idx, valueF);
-                    case Pan: trackView.setPan(idx, valueF);
-                    case Send:
-                        if (idx < sends.length) sends[idx].setLevel(0, valueF);
-                    case Device:
-                        if (parameterView != null) parameterView.setValue(idx, valueF);
-                }
-            }));
-        } else {
-            ctrlMidiTriggerList.push(new MultiNoteTrigger(knobCCs, (idx:Int, value:Int) -> {
-                if (value >= 64) value -= 128;
-                var valueF:Float = value / 64;
-                switch knobMode {
-                    case Volume: trackView.incrementVolume(idx, valueF * getIncrementMultiplier());
-                    case Pan: trackView.incrementPan(idx, valueF * getIncrementMultiplier());
-                    case Send:
-                        if (idx < sends.length) sends[idx].incrementLevel(0, valueF * getIncrementMultiplier());
-                    case Device:
-                        if (parameterView != null) parameterView.incrementValue(idx, valueF * getIncrementMultiplier());
-                }
-            }));
+        switch variant {
+            case Mk1:
+                ctrlMidiTriggerList.push(new MultiNoteTrigger(knobCCs, (idx:Int, value:Int) -> {
+                    var valueF:Float = value / 127;
+                    switch knobMode {
+                        case Volume: trackView.setVolume(idx, valueF);
+                        case Pan: trackView.setPan(idx, valueF);
+                        case Send:
+                            if (idx < sends.length) sends[idx].setLevel(0, valueF);
+                        case Device:
+                            if (parameterView != null) parameterView.setValue(idx, valueF);
+                    }
+                }));
+            case Mk2:
+                ctrlMidiTriggerList.push(new MultiNoteTrigger(knobCCs, (idx:Int, value:Int) -> {
+                    if (value >= 64) value -= 128;
+                    var valueF:Float = value / 64;
+                    switch knobMode {
+                        case Volume: trackView.incrementVolume(idx, valueF * getIncrementMultiplier());
+                        case Pan: trackView.incrementPan(idx, valueF * getIncrementMultiplier());
+                        case Send:
+                            if (idx < sends.length) sends[idx].incrementLevel(0, valueF * getIncrementMultiplier());
+                        case Device:
+                            if (parameterView != null) parameterView.incrementValue(idx, valueF * getIncrementMultiplier());
+                    }
+                }));
         }
     }
 
@@ -340,10 +347,16 @@ class APCKey25
             if (shift) trackMode = TrackMode.Solo;
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.RecArm, (_:Int) -> {
-            if (shift) trackMode = TrackMode.RecArm;
+            if (shift) trackMode = switch variant {
+                case Mk1: TrackMode.RecArm;
+                case Mk2: TrackMode.Mute;
+            }
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Mute, (_:Int) -> {
-            if (shift) trackMode = TrackMode.Mute;
+            if (shift) trackMode = switch variant {
+                case Mk1: TrackMode.Mute;
+                case Mk2: TrackMode.RecArm;
+            }
         }));
         midiTriggerList.push(new SingleNoteTrigger(ButtonNotes.Select, (_:Int) -> {
             if (shift) trackMode = TrackMode.Select;

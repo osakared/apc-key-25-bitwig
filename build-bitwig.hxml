@@ -7,6 +7,7 @@ maven-bitwig.hxml
 --cmd mv bin/APCKey25.jar bin/APCKey25.bwextension
 
 --next
+
 -D GRIG_CONTROLLER_BITWIG
 build.hxml
 com.osakared.akai.APCKey25Mk2Controller
